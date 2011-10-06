@@ -1,0 +1,23 @@
+{
+  "name": "clerk",
+  "description": "CouchDB library for Node.js",
+  "version": "0.0.1",
+  "author": "Michael Phan-Ba <michael@mikepb.com>",
+  "homepage": "https://github.com/mikepb/clerk",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mikepb/clerk.git"
+  },
+  "main": "./lib/clerk.js",
+  "engines": {
+    "node": "~0.4.12"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "sinon": "~1.1.1",
+    "vows": "~0.5.11"
+  },
+  "scripts": {
+    "test": "find test -name '*-test.js' -not -empty -print0 | xargs -0 -n 1 -P 1 vows"
+  }
+}
