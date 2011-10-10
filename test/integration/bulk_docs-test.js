@@ -145,13 +145,13 @@ suite.addBatch(fixtures.isRemoved(db, 'get 4', '4'));
 suite.addBatch({
   'Database': {
     topic: db,
-    'bulk delete with conflict': {
+    'bulk atomic delete with conflict': {
       topic: function(db) {
         var callback = this.callback;
         for (var i = 0; i < 5; ++i) docs[i]._deleted = true;
         db.get('0', function(err, doc, res) {
           docs[0] = merge({}, doc);
-          db.save(doc, function(err, data, res) {
+          db.bulk(doc, { atomic: true }, function(err, data, res) {
             db.save(docs, callback);
           });
         });
@@ -169,14 +169,13 @@ suite.addBatch({
 suite.addBatch({
   'Database': {
     topic: db,
-    'bulk save with conflict': {
+    'bulk atomic save with conflict': {
       topic: function(db) {
         var callback = this.callback;
-        for (var i = 0; i < 5; ++i) docs[i]._deleted = true;
         db.get('0', function(err, doc, res) {
           docs[0] = merge({ shooby: 'dooby' }, doc);
           db.save(doc, function(err, data, res) {
-            db.save(docs, callback);
+            db.bulk(docs, { atomic: true }, callback);
           });
         });
       },
@@ -208,14 +207,14 @@ suite.addBatch({
     },
     'creating a document with no ID': {
       topic: function(db) {
-        db.save([{ docs: [{ foo: 'bar' }] }], this.callback);
+        db.bulk([{ docs: [{ foo: 'bar' }] }], this.callback);
       },
       'should return a new ID': function(err, data, res) {
         assert.ok(data[0].id);
         assert.ok(data[0].rev);
       }
     },
-    'creating a document with no ID': {
+    'creating a document with ID': {
       topic: function(db) {
         db.save({ _id: 'foobar', body: 'baz' }, this.callback);
       },
