@@ -3,11 +3,16 @@ clerk
 
 CouchDB library for Node.js
 
+`clerk` is inspired by [cradle](https://github.com/cloudhead/cradle) and
+based on the [connector](https://github.com/mikepb/connector) connection
+abstraction library to support advanced cluster configurations. It is
+designed to be modular and easily tested using mock objects.
+
 
 ## Installation
 
 ```bash
-npm install watson
+npm install clerk
 ```
 
 
