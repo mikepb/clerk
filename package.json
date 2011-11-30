@@ -10,7 +10,7 @@
   },
   "main": "./lib/clerk.js",
   "engines": {
-    "node": "~0.4.12"
+    "node": "~0.4.11 || ~0.6.2"
   },
   "dependencies": {
     "connector": ">=0.0.1"
