@@ -20,8 +20,7 @@
 /** Module dependencies. */
 
 var vows = require('vows')
-  , assert = require('assert')
-  , sinon = require('sinon');
+  , assert = require('assert');
 
 var util = require('../lib/clerk/util');
 
