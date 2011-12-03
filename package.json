@@ -20,6 +20,6 @@
     "vows": "~0.5.11"
   },
   "scripts": {
-    "test": "find test -name '*-test.js' -not -path 'test/integration/*' -print0 | xargs -0 -n 1 -P 4 vows ; find test/integration -name '*-test.js' -print0 | xargs -0 -n 1 -P 1 vows"
+    "test": "find test -name '*-test.js' -print0 | xargs -0 vows -i"
   }
 }
