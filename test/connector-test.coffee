@@ -74,7 +74,7 @@ suite = vows.describe 'Connector'
         callback: callback
         close: close
 
-      'should callback underlying connector.close()': ({ callback, close }) ->
+      'should callback underlying connector.close': ({ callback, close }) ->
         assert.isTrue close.calledOnce
         assert.isTrue close.calledWith callback
 
@@ -105,7 +105,7 @@ suite = vows.describe 'Connector'
   withEmptyOptions = (context = {}) ->
     context['with empty options'] = ({ request }) ->
       arg0 = request.getCall(0).args[0]
-      assert.isEmpty arg0 if typeof arg0 isnt 'undefined'
+      assert.isEmpty arg0 if arg0
     context
 
   returningRequestObject = (context = {}) ->
@@ -118,31 +118,39 @@ suite = vows.describe 'Connector'
 
       'with no options':
         topic: -> factory()
+
         'should call connector.request':
           calledOnce withEmptyOptions returningRequestObject()
 
       'with data':
         topic: ->
-          factory data: {
+          data =
             message: 'Hello World!'
             fn: -> 'Goodbye World!'
-          }
 
-        'should call connector.request': ->
+          context = factory data: data
+          context.data = data
+          context
+
+        'should call connector.request':
           calledOnce returningRequestObject
 
             'with headers': ({ request }) ->
-              assert.notEmpty headers = request.getCall(0).args[0].headers
+              assert.ok headers = request.getCall(0).args[0].headers
               assert.strictEqual headers['Content-Type'], 'application/json'
               assert.isTrue headers['Content-Length'] > 0
 
             'with json parsable data': ({ request, data }) ->
               js = null
-              json = request.getCall(0).args[0].data
-              assert.notEmpty json
+              assert.ok json = request.getCall(0).args[0].data
               assert.doesNotThrow (-> js = JSON.parse(json) ), SyntaxError
               assert.strictEqual js.message, data.message
-              assert.match js.fn /\bfunction(\s|\\n)*\(\)(\s|\\n)*{(\s|\\n)*\breturn\b(\s|\\n)*'Goodbye World!'(\s|\\n)*;(\s|\\n)*}/
+              assert.match js.fn, ///
+                \b
+                  function (\s|\\n)* \(\) (\s|\\n)* \{ (\s|\\n)*
+                    \b return \b (\s|\\n)* 'Goodbye\sWorld!' (\s|\\n)* ; (\s|\\n)*
+                  \}
+              ///
 
       'with data emitter':
         topic: -> factory data: on: sinon.stub()
@@ -157,7 +165,7 @@ suite = vows.describe 'Connector'
           context.callback = callback
           context
 
-        'should call connector.request': ->
+        'should call connector.request':
           calledOnce withEmptyOptions returningRequestObject()
 
         'should call request.on':
@@ -168,7 +176,7 @@ suite = vows.describe 'Connector'
           'with response callback': ({ requestObject }) ->
             assert.isTrue requestObject.on.calledWith 'response'
 
-          'and respond to response event':
+          'with response handler to':
             topic: ({ callback, requestObject }) ->
               responseObject =
                 on: sinon.stub()
@@ -180,19 +188,17 @@ suite = vows.describe 'Connector'
               callback: callback
               responseObject: responseObject
 
-            'to set encoding to utf8': ({ responseObject }) ->
+            'set encoding to utf8': ({ responseObject }) ->
               responseObject.setEncoding.alwaysCalledWith 'utf8'
 
-            'to respond':
+            'respond to data events': ({ responseObject }) ->
+              responseObject.on.calledWith 'data'
 
-              'to data events': ({ responseObject }) ->
-                responseObject.on.calledWith 'data'
+            'respond to end event': ({ responseObject }) ->
+              responseObject.on.calledWith 'end'
 
-              'to end event': ({ responseObject }) ->
-                responseObject.on.calledWith 'end'
-
-              'to error event': ({ responder, responseObject }) ->
-                responseObject.on.calledWith 'error', responder
+            'respond to error event': ({ responder, responseObject }) ->
+              responseObject.on.calledWith 'error', responder
 
 )()
 
