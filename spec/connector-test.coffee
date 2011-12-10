@@ -173,3 +173,52 @@ describe 'Connector', ->
 
           it 'respond to error event', ->
             responseObject.on.calledWith 'error', responder
+
+    describe 'head', ->
+      callback = sinon.stub()
+
+      headers = {}
+
+      req = on: sinon.stub()
+      res = on: sinon.stub(), setEncoding: sinon.stub(), headers: headers
+
+      req.on.withArgs('response').yields res
+
+      connector = new Connector
+        connector:
+          request: sinon.stub().returns req
+
+      connector.request { method: 'HEAD' }, callback
+
+      args[1]() for k, args of res.on.args when args[0] is 'end'
+
+      it 'should set encoding to utf8', ->
+        res.setEncoding.alwaysCalledWith 'utf8'
+
+      it 'should return the headers as data', ->
+        assert.ok callback.calledOnce
+        assert.ok callback.alwaysCalledWith null, headers, res
+
+    describe 'get', ->
+      callback = sinon.stub()
+
+      req = on: sinon.stub()
+      res = on: sinon.stub(), setEncoding: sinon.stub()
+
+      req.on.withArgs('response').yields res
+      res.on.withArgs('data').yields '{"message":"Hello World!"}'
+
+      connector = new Connector
+        connector:
+          request: sinon.stub().returns req
+
+      connector.request { method: 'GET' }, callback
+
+      args[1]() for k, args of res.on.args when args[0] is 'end'
+
+      it 'should set encoding to utf8', ->
+        res.setEncoding.alwaysCalledWith 'utf8'
+
+      it 'should return JSON data', ->
+        assert.ok callback.calledOnce
+        assert.ok callback.alwaysCalledWith null, { message: 'Hello World!' }, res
