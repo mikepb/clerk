@@ -30,7 +30,7 @@ describe 'Connector', ->
 
   describe '#constructor()', ->
 
-    shouldUsePort = (options) -> ->
+    shouldUsePort = (options) ->
       connector = new Connector options
       port = options?.port or 5984
       it "should use port #{port}", ->
@@ -51,7 +51,7 @@ describe 'Connector', ->
     connector = new Connector connector: close: close
     connector.close callback
 
-    it 'should callback underlying connector.close': ->
+    it 'should callback underlying connector.close', ->
       assert.ok close.calledOnce
       assert.ok close.calledWith callback
 
@@ -82,7 +82,7 @@ describe 'Connector', ->
       it 'with empty options', ->
         { request } = context
         arg0 = request.getCall(0).args[0]
-        assert.isEmpty arg0 if arg0
+        assert.strictEqual Object.keys(arg0).length, 0 if arg0
       context
 
     returningRequestObject = (context = {}) ->
@@ -126,9 +126,16 @@ describe 'Connector', ->
           ///.test(js.fn)
 
     describe 'with data emitter', ->
-      context = factory data: on: sinon.stub()
-      'should call connector.request': ->
-        calledOnce withEmptyOptions returningRequestObject context
+      data = on: sinon.stub()
+      context = factory data: data
+
+      describe 'should call connector.request', ->
+        calledOnce returningRequestObject context
+
+        it 'with data', ->
+          { request } = context
+          arg0 = request.getCall(0).args[0]
+          assert.strictEqual arg0.data, data
 
     describe 'with callback', ->
       callback = sinon.stub()
@@ -141,10 +148,10 @@ describe 'Connector', ->
       describe 'should call request.on', ->
         { requestObject, callback } = context
 
-        describe 'with error callback', ->
+        it 'with error callback', ->
           assert.ok requestObject.on.calledWith 'error', callback
 
-        describe 'with response callback', ->
+        it 'with response callback', ->
           assert.ok requestObject.on.calledWith 'response'
 
         describe 'with response handler to', ->
