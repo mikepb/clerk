@@ -1,12 +1,7 @@
 clerk
 =====
 
-CouchDB library for Node.js
-
-`clerk` is inspired by [cradle](https://github.com/cloudhead/cradle) and
-based on the [connector](https://github.com/mikepb/connector) connection
-abstraction library to support advanced cluster configurations. It is
-designed to be modular and easily tested using mock objects.
+CouchDB library for node and the browser.
 
 
 ## Installation
@@ -18,15 +13,8 @@ npm install clerk
 
 ## Running Tests
 
-Install `vows`:
-
 ```bash
-npm install vows
-```
-
-Then:
-
-```bash
+npm install
 npm test
 ```
 
@@ -36,10 +24,7 @@ npm test
 ```javascript
 var clerk = require('clerk');
 
-var client = clerk.createClient({
-  host: '127.0.0.1',
-  port: 8080
-});
+var client = clerk.createClient('http://127.0.0.1:5984');
 
 var db = client.database('test');
 
@@ -51,7 +36,7 @@ db.info(function(err, info) {
 
 ## License
 
-    Copyright 2011 Michael Phan-Ba
+    Copyright 2012 Michael Phan-Ba
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
