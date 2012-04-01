@@ -84,16 +84,14 @@ function request(method, path, query, data, headers) {
     , callback = args[nargs - 1]
     , header;
 
-  method || (method = GET);
-
   if (nargs < 6) headers = 0;
   if (nargs < 4) query = {};
 
-  _request(method, uri, query, body, headers, auth, callback);
+  _request(method || GET, uri, query, body, headers, auth, callback);
 };
 
 function _request(method, uri, query, body, headers, auth, callback) {
-  var xhr = new XMLHttpRequest;
+  var xhr = new XMLHttpRequest(), header;
 
   xhr.open(method, uri, true, auth.user, auth.pass);
 
@@ -118,7 +116,7 @@ function _request(method, uri, query, body, headers, auth, callback) {
         }
       }
 
-      callback && callback(null, data, xhr.status, headers, xhr);
+      if (callback) callback(null, data, xhr.status, headers, xhr);
     }
   };
 
@@ -166,7 +164,7 @@ function getHeaders(xhr) {
  */
 
 function extend(target /* sources.. */) {
-  var sources = __slice.call(arguments, 1), i, sources, key;
+  var sources = __slice.call(arguments, 1), key, i;
   for (i = 0; source = sources[i]; i++) {
     for (key in source) target[key] = source[key];
   }
@@ -210,7 +208,7 @@ function unpackArgs(args, objectBeforeQuery) {
 
 function Client(uri) {
   this.uri = uri || 'http://127.0.0.1:5984';
-};
+}
 
 Client.prototype = {
 
@@ -361,7 +359,7 @@ Client.prototype = {
   config: function(/* [key], [query], [callback] */) {
     var args = unpackArgs(arguments)
       , path = '_config';
-    if (args[0]) path += encodeURI(args[0])
+    if (args[0]) path += encodeURI(args[0]);
     this.request(GET, path, args.q, args.f);
   },
 
@@ -461,7 +459,7 @@ function Database(client, name) {
   this.client = client;
   this.name = name;
   this.uri = client.uri + '/' + encodeURIComponent(name);
-};
+}
 
 Database.prototype = {
 
@@ -540,7 +538,7 @@ Database.prototype = {
   exists: function(/* query, callback */) {
     var args = unpackArgs(arguments);
     this.request(HEAD, '', args.q, function(err, body, status, headers, xhr) {
-      args.f && args.f(err, status === 200, headers, headers, xhr);
+      if (args.f) args.f(err, status === 200, headers, headers, xhr);
     });
   },
 
@@ -586,7 +584,7 @@ Database.prototype = {
   head: function(id /* [query], [callback] */) {
     var args = unpackArgs(arguments);
     this.request(HEAD, encodeURIComponent(id), args.q, function(err, body, status, headers, xhr) {
-      args.f && args.f(err, err ? body : {
+      if (args.f) args.f(err, err ? body : {
         id: id,
         rev: headers.etag && JSON.parse(headers.etag),
         contentType: headers['content-type'],
@@ -843,9 +841,7 @@ Database.prototype = {
    */
 
   view: function(view /* query, callback */) {
-    var args = unpackArgs(arguments)
-      , view = args[0]
-      , body;
+    var args = unpackArgs(arguments), body;
 
     if (view) {
       path = view.split('/', 2);
@@ -914,8 +910,8 @@ Database.prototype = {
    */
 
   replicate: function(options, query, callback) {
-    options.source || (options.source = this.name);
-    options.target || (options.target = this.name);
+    if (!options.source) options.source = this.name;
+    if (!options.target) options.target = this.name;
     this.client.replicate(options, query, callback);
   },
 
@@ -1011,7 +1007,7 @@ function parseViewOptions(q, body) {
     if (q.endkey) q.endkey = JSON.stringify(q.endkey);
     if (q.stale && q.stale !== 'update_after') q.stale = 'ok';
     if (q.keys) {
-      body || (body = {});
+      if (!body) body = {};
       body.keys = q.keys;
       delete q.keys;
     }

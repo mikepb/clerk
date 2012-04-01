@@ -21,7 +21,7 @@ build:
 	# unexpose Client, Database, extend, request, _response
 	# replace Array.prototype.slice
 	cat $(SRCJS) | sed -E \
-		-e '/\/\*!/,/\*\//d' \
+		-e '/\/\*(!|jshint)/,/\*\//d' \
 		-e "s/'(GET|HEAD|POST|PUT|DELETE|COPY)'/\1/g" \
 		-e 's/exports\.(Clerk|Client|Database|extend|request|_request|_response|asString|isString|isObject|isFunction|unpackArgs)( =( )(function))?/\4\3\1/g' \
 		-e 's/exports\.(Clerk|Client|Database) = (Clerk|Client|Database);//g' \
