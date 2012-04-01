@@ -5,11 +5,13 @@
 */
 
 ;(function(
-  exports,
+  module,
   encodeURI,
   encodeURIComponent,
   decodeURIComponent
 ){
+
+var exports = module.exports || {};
 
 var GET = 'GET'
   , HEAD = 'HEAD'
@@ -20,6 +22,32 @@ var GET = 'GET'
 
 var __slice = Array.prototype.slice;
 
+/**
+    Create CouchDB client.
+
+    @param {String} uri Fully qualified URI.
+ */
+
+module.exports = exports = function(uri) {
+  var client, match;
+
+  if (uri) {
+    match = /^(https?:\/\/)(?:([^@:]+):([^@]+)@)?(.*?)\/*$/.exec(uri);
+    if (match) uri = uri[1] + uri[4];
+  }
+
+  client = new Client(uri);
+
+  if (uri) {
+    client.auth = {
+      user: match[2] && decodeURIComponent(match[2]),
+      pass: match[3] && decodeURIComponent(match[3])
+    };
+  }
+
+  return client;
+};
+
 exports.version = '0.1.0pre';
 
 /**
@@ -29,25 +57,6 @@ exports.version = '0.1.0pre';
 exports.noConflict = function() {
   window.clerk = exports._;
   return exports;
-};
-
-/**
-    Create CouchDB client.
-
-    @param {String} uri Fully qualified URI.
- */
-
-exports.createClient = function(uri) {
-  var match = /^(https?:\/\/)(?:([^@:]+):([^@]+)@)?(.*?)\/*$/.exec(uri);
-  if (!match) throw new Error('Bad URI: ' + uri);
-
-  var client = new Client(match[1] + match[4]);
-  client.auth = {
-    user: match[2] && decodeURIComponent(match[2]),
-    pass: match[3] && decodeURIComponent(match[3])
-  };
-
-  return client;
 };
 
 /**
@@ -200,7 +209,7 @@ function unpackArgs(args, objectBeforeQuery) {
  */
 
 function Client(uri) {
-  this.uri = uri;
+  this.uri = uri || 'http://127.0.0.1:5984';
 };
 
 Client.prototype = {
@@ -267,7 +276,7 @@ Client.prototype = {
   uuids: function(count /* [query], [callback] */) {
     var args = unpackArgs(arguments);
     if (count > 1) args.q.count = count;
-    this.request(GET, '_uuids', args.q, args.fn);
+    this.request(GET, '_uuids', args.q, args.f);
   },
 
   /**
@@ -439,6 +448,8 @@ Client.prototype = {
 
 };
 
+Client = Client;
+
 /**
     Methods for CouchDB database.
 
@@ -572,7 +583,7 @@ Database.prototype = {
         @param {ClientResponse} [callback.response] ClientResponse object.
    */
 
-  head: function(id /* query, callback */) {
+  head: function(id /* [query], [callback] */) {
     var args = unpackArgs(arguments);
     this.request(HEAD, encodeURIComponent(id), args.q, function(err, body, status, headers, xhr) {
       args.f && args.f(err, err ? body : {
@@ -597,7 +608,7 @@ Database.prototype = {
         @param {ClientResponse} [callback.response] ClientResponse object.
   */
 
-  put: function(/* [id], [rev], [doc], [query] callback */) {
+  put: function(/* [id], [rev], [doc], [query], [callback] */) {
     var args = unpackDocArgs(arguments, 1);
     this.request(PUT, args.id, args.q, args.doc, args.f);
   },
@@ -936,7 +947,7 @@ Database.prototype = {
 
   purge: function(revs /* [query], [callback] */) {
     var args = unpackArgs(arguments);
-    this.request(POST, '_purge', args.q, revs, args.fn);
+    this.request(POST, '_purge', args.q, revs, args.f);
   },
 
   /**
@@ -981,7 +992,7 @@ Database.prototype = {
 };
 
 function unpackDocArgs(args, withDoc) {
-  // [id, rev], [doc], [query], callback
+  // [id, rev], [doc], [query], [callback]
   args = __slice.call(args);
 
   return {
@@ -1008,13 +1019,15 @@ function parseViewOptions(q, body) {
   return body;
 }
 
+Database = Database;
+
 if (typeof window != 'undefined') {
   exports._ = window.clerk;
   window.clerk = exports;
 }
 
 })(
-  typeof exports != 'undefined' ? exports : {},
+  typeof module != 'undefined' ? module : {},
   encodeURI,
   encodeURIComponent,
   decodeURIComponent
