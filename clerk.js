@@ -69,16 +69,10 @@ function createClient(uri) {
     if (match) uri = uri[1] + uri[4];
   }
 
-  client = new Client(uri);
-
-  if (uri) {
-    client.auth = {
-      user: match[2] && decodeURIComponent(match[2]),
-      pass: match[3] && decodeURIComponent(match[3])
-    };
-  }
-
-  return client;
+  return new Client(uri, uri && {
+    user: match[2] && decodeURIComponent(match[2]),
+    pass: match[3] && decodeURIComponent(match[3])
+  });
 };
 
 /**
@@ -235,8 +229,9 @@ function isFunction(that) {
     @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Complete_HTTP_API_Reference)
  */
 
-function Client(uri) {
+function Client(uri, auth) {
   this.uri = uri || 'http://127.0.0.1:5984';
+  this.auth = auth;
 }
 
 Client.prototype = {
@@ -267,9 +262,7 @@ Client.prototype = {
    */
 
   database: function(name) {
-    var db = new Database(this, name);
-    db.auth = this.auth;
-    return db;
+    return new Database(this, name, this.auth);
   },
 
   /**
@@ -506,10 +499,11 @@ Client.prototype = {
     @param {String} options Database name.
  */
 
-function Database(client, name) {
+function Database(client, name, auth) {
   this.client = client;
   this.name = name;
   this.uri = client.uri + '/' + encodeURIComponent(name);
+  this.auth = auth;
 }
 
 Database.prototype = {
