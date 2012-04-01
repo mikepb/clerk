@@ -20,7 +20,7 @@ var GET = 'GET'
   , DELETE = 'DELETE'
   , COPY = 'COPY';
 
-var __slice = Array.prototype.slice;
+var __slice = [].slice;
 
 /**
     Create CouchDB client.
@@ -74,20 +74,22 @@ exports.noConflict = function() {
       @param {Object} headers Response headers.
  */
 
-function request(method, path, query, data, headers) {
+function request(/* [method], [path], [query], [data], [headers], [callback] */) {
   var self = this
-    , args = arguments
-    , nargs = args.length
-    , uri = self.uri + (nargs < 3 ? '' : '/' + path)
-    , auth = self.auth || {}
-    , body = nargs < 5 ? '' : JSON.stringify(data)
-    , callback = args[nargs - 1]
-    , header;
+    , args = __slice.call(arguments)
+    , callback = isFunction(args[args.length - 1]) && args.pop();
 
-  if (nargs < 6) headers = 0;
-  if (nargs < 4) query = {};
+  _request(
+    args[0] || GET,                           // method
+    self.uri + (args[1] ? '/' + args[1] : ''),  // path
+    args[2],                                    // query
+    args[3] && JSON.stringify(args[3]) || '',   // body
+    args[4],                                    // headers
+    self.auth || {},                            // auth
+    callback
+  );
 
-  _request(method || GET, uri, query, body, headers, auth, callback);
+  return this;
 };
 
 function _request(method, uri, query, body, headers, auth, callback) {
@@ -102,35 +104,28 @@ function _request(method, uri, query, body, headers, auth, callback) {
   }
 
   xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+    if (callback && xhr.readyState === 4) {
       var headers = getHeaders(xhr)
-        , data = xhr.responseText;
+        , data = xhr.responseText
+        , err;
 
       if (method === HEAD) {
         data = headers;
       } else {
         try {
-          data = _response(JSON.parse(data));
+          data = JSON.parse(data);
         } catch (e) {
           err = e;
         }
+        if (!err) data = _response(data);
       }
 
-      if (callback) callback(null, data, xhr.status, headers, xhr);
+      callback(err, data, xhr.status, headers, xhr);
     }
   };
 
   xhr.send(body);
 };
-
-var responseHeaders = [
-  'Cache-Control',
-  'Content-Length',
-  'Content-Type',
-  'Date',
-  'ETag',
-  'Server'
-];
 
 function _response(json) {
   var data = json.rows || json.results || json.uuids;
@@ -144,6 +139,15 @@ function _response(json) {
 
   return json;
 };
+
+var responseHeaders = [
+  'cache-control',
+  'content-length',
+  'content-type',
+  'date',
+  'etag',
+  'server'
+];
 
 function getHeaders(xhr) {
   var headers = {}
@@ -164,10 +168,13 @@ function getHeaders(xhr) {
  */
 
 function extend(target /* sources.. */) {
-  var sources = __slice.call(arguments, 1), key, i;
-  for (i = 0; source = sources[i]; i++) {
+  var sources = __slice.call(arguments, 1)
+    , source, key, i = 0, len = sources.length;
+  while (i < len) {
+    source = sources[i++];
     for (key in source) target[key] = source[key];
   }
+  return target;
 };
 
 function asString(that) {
@@ -184,15 +191,6 @@ function isObject(that) {
 
 function isFunction(that) {
   return asString(that) === '[object Function]';
-};
-
-function unpackArgs(args, objectBeforeQuery) {
-  args = __slice.call(args);
-  args.f = isFunction(args[args.length - 1]) && args.pop();
-  args.q = isObject(args[args.length - 1]) &&
-           (!objectBeforeQuery || isObject(args[args.length - 2])) &&
-           args.pop() || {};
-  return args;
 };
 
 /**
@@ -238,7 +236,7 @@ Client.prototype = {
    */
 
   database: function(name) {
-    var db = new Database(this.uri + '/' + encodeURIComponent(name));
+    var db = new Database(this, name);
     db.auth = this.auth;
     return db;
   },
@@ -254,9 +252,8 @@ Client.prototype = {
     @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-misc.html#couchbase-api-misc_all-dbs_get)
    */
 
-  databases: function(/* [query], [callback] */) {
-    var args = unpackArgs(arguments);
-    this.request(GET, '_all_dbs', args.q, args.f);
+  databases: function(/* [query], [headers], [callback] */) {
+    return this._(arguments)(GET, '_all_dbs');
   },
 
   /**
@@ -271,10 +268,10 @@ Client.prototype = {
     @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-misc.html#couchbase-api-misc_uuids_get)
    */
 
-  uuids: function(count /* [query], [callback] */) {
-    var args = unpackArgs(arguments);
-    if (count > 1) args.q.count = count;
-    this.request(GET, '_uuids', args.q, args.f);
+  uuids: function(count /* [query], [headers], [callback] */) {
+    var request = this._(arguments, 1);
+    if (count > 1) request.q.count = count;
+    return request(GET, '_uuids');
   },
 
   /**
@@ -288,9 +285,8 @@ Client.prototype = {
     @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-misc.html#couchbase-api-misc_root_get)
    */
 
-  info: function(/* [query], [callback] */) {
-    var args = unpackArgs(arguments);
-    this.request(GET, '', args.q, args.f);
+  info: function(/* [query], [headers], [callback] */) {
+    return this._(arguments)(GET);
   },
 
   /**
@@ -304,9 +300,8 @@ Client.prototype = {
     @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-misc.html#couchbase-api-misc_log_get)
    */
 
-  stats: function(/* [query], [callback] */) {
-    var args = unpackArgs(arguments);
-    this.request(GET, '_stats', args.q, args.f);
+  stats: function(/* [query], [headers], [callback] */) {
+    return this._(arguments)(GET, '_stats');
   },
 
   /**
@@ -324,9 +319,8 @@ Client.prototype = {
     @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-misc.html#couchbase-api-misc_log_get)
    */
 
-  log: function(/* [query], [callback] */) {
-    var args = unpackArgs(arguments);
-    this.request(GET, '_log', args.q, args.f);
+  log: function(/* [query], [headers], [callback] */) {
+    return this._(arguments)(GET, '_log');
   },
 
   /**
@@ -340,9 +334,8 @@ Client.prototype = {
     @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-misc.html#couchbase-api-misc_active-tasks_get)
    */
 
-  tasks: function(/* [query], [callback] */) {
-    var args = unpackArgs(arguments);
-    this.request(GET, '_active_tasks', args.q, args.f);
+  tasks: function(/* [query], [headers], [callback] */) {
+    return this._(arguments)(GET, '_active_tasks');
   },
 
   /**
@@ -357,10 +350,10 @@ Client.prototype = {
    */
 
   config: function(/* [key], [query], [callback] */) {
-    var args = unpackArgs(arguments)
-      , path = '_config';
-    if (args[0]) path += encodeURI(args[0]);
-    this.request(GET, path, args.q, args.f);
+    var request = this._(arguments);
+    return request(GET,
+      '_config' + (request.p ? '/' + encodeURI(request.p) : '')
+    );
   },
 
   /**
@@ -376,10 +369,10 @@ Client.prototype = {
     @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-config.html#couchbase-api-config_config-section-key_put)
    */
 
-  setConfig: function(section, key, value /* [query], [callback] */) {
-    var args = unpackArgs(arguments, 1)
-      , path = ['_config', encodeURIComponent(section), encodeURIComponent(key)].join('/');
-    this.request(PUT, path, args.q, value, args.f);
+  setConfig: function(section, key, value /* [query], [headers], [callback] */) {
+    return this._(arguments, 3)(PUT,
+      ['_config', encodeURIComponent(section), encodeURIComponent(key)].join('/')
+    );
   },
 
   /**
@@ -394,10 +387,10 @@ Client.prototype = {
     @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-config.html#couchbase-api-config_config-section-key_put)
    */
 
-  delConfig: function(section, key /* [query], [callback] */) {
-    var args = unpackArgs(arguments)
-      , path = ['_config', encodeURIComponent(section), encodeURIComponent(key)].join('/');
-    this.request(DELETE, path, args.q, args.f);
+  delConfig: function(section, key /* [query], [headers], [callback] */) {
+    return this._(arguments, 2)(DELETE,
+      ['_config', encodeURIComponent(section), encodeURIComponent(key)].join('/')
+    );
   },
 
   /**
@@ -424,9 +417,8 @@ Client.prototype = {
     @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-misc.html#couchbase-api-misc_replicate_post)
    */
 
-  replicate: function(options /* [query], [callback] */) {
-    var args = unpackArgs(arguments, 1);
-    this.request(POST, '_replicate', args.q, options, args.f);
+  replicate: function(options /* [query], [headers], [callback] */) {
+    return this._(arguments)(POST, '_replicate', { b: options });
   },
 
   /**
@@ -439,14 +431,42 @@ Client.prototype = {
     @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-misc.html#couchbase-api-misc_restart_post)
    */
 
-  restart: function(/* [query], [callback] */) {
-    var args = unpackArgs(arguments);
-    this.request(POST, '_restart', args.q, '', args.f);
+  restart: function(/* [path], [query], [headers], [callback] */) {
+    return this._(arguments)(POST, '_restart');
+  },
+
+  _: function(args, start) {
+    var self = this;
+
+    function request(method, path, options) {
+      if (!options) options = {};
+
+      self.request(
+        method,
+        path || request.p,
+        options.q || request.q,
+        options.b,
+        options.h || request.h,
+        options.f || request.f
+      );
+
+      return self;
+    }
+
+    // [query], [header], [callback]
+    args = __slice.call(args, start);
+
+    request.f = isFunction(args[args.length - 1]) && args.pop();
+    request.p = isString(args[0]) && args.shift();
+    request.q = args[0] || {};
+    request.h = args[1] || {};
+
+    return request;
   }
 
 };
 
-Client = Client;
+
 
 /**
     Methods for CouchDB database.
@@ -491,9 +511,8 @@ Database.prototype = {
       @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db_put)
    */
 
-  create: function(/* query, callback */) {
-    var args = unpackArgs(arguments);
-    this.request(PUT, '', args.q, '', args.f);
+  create: function(/* [query], [headers], [callback] */) {
+    return this._(arguments)(PUT);
   },
 
   /**
@@ -506,9 +525,8 @@ Database.prototype = {
       @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db_delete)
    */
 
-  destroy: function(/* query, callback */) {
-    var args = unpackArgs(arguments);
-    this.request(DELETE, '', args.q, '', args.f);
+  destroy: function(/* [query], [headers], [callback] */) {
+    return this._(arguments)(DELETE);
   },
 
   /**
@@ -521,9 +539,8 @@ Database.prototype = {
       @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db_get)
   */
 
-  info: function(/* query, callback */) {
-    var args = unpackArgs(arguments);
-    this.request(GET, '', args.q, args.f);
+  info: function(/* [query], [headers], callback */) {
+    return this._(arguments)(GET);
   },
 
   /**
@@ -535,11 +552,14 @@ Database.prototype = {
           otherwise.
   */
 
-  exists: function(/* query, callback */) {
-    var args = unpackArgs(arguments);
-    this.request(HEAD, '', args.q, function(err, body, status, headers, xhr) {
-      if (args.f) args.f(err, status === 200, headers, headers, xhr);
-    });
+  exists: function(/* [query], [headers], callback */) {
+    var request = this._(arguments), callback = request.f;
+
+    request.f = function(err, body, status, headers, xhr) {
+      callback(err, status === 200, headers, headers, xhr);
+    };
+
+    return request(HEAD);
   },
 
   /**
@@ -558,9 +578,8 @@ Database.prototype = {
       @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-dbdoc.html#couchbase-api-dbdoc_db-doc_get)
   */
 
-  get: function(/* id, [rev], [query], [callback] */) {
-    var args = unpackDocArgs(arguments);
-    this.request(GET, args.id, args.q, args.f);
+  get: function(/* id, [rev], [query], [headers], [callback] */) {
+    return this._(arguments)(GET);
   },
 
   /**
@@ -581,16 +600,19 @@ Database.prototype = {
         @param {ClientResponse} [callback.response] ClientResponse object.
    */
 
-  head: function(id /* [query], [callback] */) {
-    var args = unpackArgs(arguments);
-    this.request(HEAD, encodeURIComponent(id), args.q, function(err, body, status, headers, xhr) {
-      if (args.f) args.f(err, err ? body : {
-        id: id,
+  head: function(/* [id], [query], [headers], callback */) {
+    var request = this._(arguments), callback = request.f;
+
+    request.f = function(err, body, status, headers, xhr) {
+      callback(err, err ? body : {
+        id: request.p,
         rev: headers.etag && JSON.parse(headers.etag),
         contentType: headers['content-type'],
         contentLength: headers['content-length']
       }, status, headers, xhr);
-    });
+    };
+
+    return request(HEAD);
   },
 
   /**
@@ -606,9 +628,19 @@ Database.prototype = {
         @param {ClientResponse} [callback.response] ClientResponse object.
   */
 
-  put: function(/* [id], [rev], [doc], [query], [callback] */) {
-    var args = unpackDocArgs(arguments, 1);
-    this.request(PUT, args.id, args.q, args.doc, args.f);
+  put: function(/* [id], [rev], [doc], [query], [headers], [callback] */) {
+    var request = this._(arguments, 0, 1);
+
+    if (!request.p) request.p = request.b._id;
+    if (request.q.rev) {
+      request.b._rev = request.q.rev;
+      delete request.q.rev;
+    }
+
+    // prevent acidentally creating database
+    if (!request.p) throw new Error('missing id');
+
+    return request(PUT);
   },
 
   /**
@@ -647,9 +679,8 @@ Database.prototype = {
       @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-dbdoc.html#couchbase-api-dbdoc_db_post)
   */
 
-  post: function(/* doc, [query], callback */) {
-    var args = unpackDocArgs(arguments, 1);
-    this.request(POST, '', args.q, args.doc, args.f);
+  post: function(doc /* [query], [headers], callback */) {
+    return this._(arguments, 1)(POST, 0, { b: doc });
   },
 
   /**
@@ -664,9 +695,10 @@ Database.prototype = {
         @param {ClientResponse} [callback.response] ClientResponse object.
    */
 
-  del: function(id, rev, query, callback) {
-    var args = unpackDocArgs(arguments);
-    this.request(DELETE, args.id, args.rev, '', args.f);
+  del: function(id, rev /* [query], [headers], [callback] */) {
+    // prevent acidentally deleting database
+    if (!id || !rev) throw new Error('missing id or rev');
+    return this._(arguments)(DELETE);
   },
 
   /**
@@ -693,23 +725,18 @@ Database.prototype = {
         @param {ClientResponse} [callback.response] ClientResponse object.
    */
 
-  copy: function(source, target, query, callback) {
-    var sourcePath = encodeURIComponent(source.id || source._id)
+  copy: function(source, target /* [query], [headers], [callback] */) {
+    var request = this._(arguments, 2)
+      , sourcePath = encodeURIComponent(source.id || source._id)
       , targetPath = encodeURIComponent(target.id || target._id)
       , sourceRev = source.rev || source._rev
       , targetRev = target.rev || target._rev;
 
-    if (isFunction(query)) {
-      callback = options;
-      query = {};
-    }
-
-    if (sourceRev) query.rev = sourceRev;
+    if (sourceRev) request.q.rev = sourceRev;
     if (targetRev) targetPath += '?rev=' + encodeURIComponent(targetRev);
 
-    this.request(COPY, sourcePath, query, '', {
-      'Destination': targetPath
-    }, callback);
+    request.h.Destination = targetPath;
+    return request(COPY, sourcePath);
   },
 
   /**
@@ -739,16 +766,10 @@ Database.prototype = {
       @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-all-docs_get)
    */
 
-  all: function(query, callback) {
-    var body;
-
-    if (isFunction(query)) {
-      callback = query;
-    } else {
-      body = parseViewOptions(query);
-    }
-
-    this.request(body ? POST : GET, '_all_docs', query, body, callback);
+  all: function(/* [query], [headers], [callback] */) {
+    var request = this._(arguments)
+      , body = parseViewOptions(request.q);
+    return request(body ? POST : GET, '_all_docs', { b: body });
   },
 
   /**
@@ -770,10 +791,9 @@ Database.prototype = {
       @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-bulk-docs_post)
    */
 
-  bulk: function(docs /* query, callback */) {
-    var args = unpackArgs(arguments);
-    args.q.docs = docs;
-    this.request(POST, '_bulk_docs', 0, args.q, args.f);
+  bulk: function(docs /* [query], [headers], [callback] */) {
+    var request = this._(arguments, 1); request.q.docs = docs;
+    return request(POST, '_bulk_docs', { q: 0, b: request.q });
   },
 
   /**
@@ -793,12 +813,10 @@ Database.prototype = {
       @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-bulk-docs_post)
    */
 
-  delAll: function(docs, query, callback) {
-    var i = 0, doc;
-    while (doc = docs[i++]) {
-      doc._deleted = true;
-    }
-    this.bulk(docs, query, callback);
+  delAll: function(docs, query, headers, callback) {
+    var i = 0, len = docs.length, doc;
+    while (i < len) if (doc = docs[i++]) doc._deleted = true;
+    this.bulk(docs, query, headers, callback);
   },
 
   /**
@@ -840,10 +858,10 @@ Database.prototype = {
       @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-temp-view_post)
    */
 
-  view: function(view /* query, callback */) {
-    var args = unpackArgs(arguments), body;
+  view: function(view /* [query], [headers], [callback] */) {
+    var request = this._(arguments, 1), path, body;
 
-    if (view) {
+    if (isString(view)) {
       path = view.split('/', 2);
       path = ['_design', encodeURIComponent(path[0]), '_view', encodeURIComponent(path[1])].join('/');
     } else {
@@ -851,8 +869,8 @@ Database.prototype = {
       body = view;
     }
 
-    body = parseViewOptions(query, body);
-    this.request(body ? POST : GET, path, args.q, body, args.f);
+    body = parseViewOptions(request.q, body);
+    return request(body ? POST : GET, path, { b: body });
   },
 
   /**
@@ -876,19 +894,17 @@ Database.prototype = {
    */
 
   update: function(handler /* [id], [query], [data], [headers], [callback] */) {
-    var args = __slice.call(arguments, 1)
-      , callback = isFunction(args[args.length - 1]) && args.pop()
-      , id = isString(id) && args.shift()
-      , query = args[0]
-      , data = args[1]
-      , headers = args[2]
+    var request = this._(arguments, 1, 1)
       , path = handler.split('/', 2);
 
     path = ['_design', encodeURIComponent(path[0]), '_update', encodeURIComponent(path[1])];
-    if (id) path.push(id);
+    if (request.p) path.push(request.p);
     path = path.join('/');
 
-    this.request(id ? PUT : POST, path, query, data, headers, callback);
+    return request(request.p ? PUT : POST, path, {
+      q: request.b,
+      b: request.q
+    });
   },
 
   /**
@@ -912,7 +928,7 @@ Database.prototype = {
   replicate: function(options, query, callback) {
     if (!options.source) options.source = this.name;
     if (!options.target) options.target = this.name;
-    this.client.replicate(options, query, callback);
+    return this.client.replicate(options, query, callback);
   },
 
   /**
@@ -925,9 +941,8 @@ Database.prototype = {
       @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-ensure-full-commit_post)
   */
 
-  commit: function(/* [query], [callback] */) {
-    var args = unpackArgs(arguments);
-    this.request(POST, '_ensure_full_commit', args.q, '', args.f);
+  commit: function(/* [query], [headers], [callback] */) {
+    return this._(arguments)(POST, '_ensure_full_commit');
   },
 
   /**
@@ -941,9 +956,8 @@ Database.prototype = {
       @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-purge_post)
    */
 
-  purge: function(revs /* [query], [callback] */) {
-    var args = unpackArgs(arguments);
-    this.request(POST, '_purge', args.q, revs, args.f);
+  purge: function(revs /* [query], [headers], [callback] */) {
+    return this._(arguments, 1)(POST, '_purge', { b: revs });
   },
 
   /**
@@ -959,15 +973,11 @@ Database.prototype = {
       @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-compact-design-doc_post)
    */
 
-  compact: function(/* [design], [query], [callback] */) {
-    var args = unpackArgs(arguments)
-      , path = '_compact';
-
-    if (args[0]) {
-      path += '/' + encodeURIComponent(design);
-    }
-
-    this.request(POST, path, args.q, '', args.f);
+  compact: function(/* [design], [query], [headers], [callback] */) {
+    var request = this._(arguments);
+    return request(POST,
+      '_compact' + (request.p ? '/' + encodeURIComponent(request.p) : '')
+    );
   },
 
   /**
@@ -981,24 +991,44 @@ Database.prototype = {
       @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-view-cleanup_post)
    */
 
-  vacuum: function(callback) {
-    this.request(POST, '_view_cleanup', 0, '', callback);
+  vacuum: function(/* [query], [headers], [callback] */) {
+    return this._(arguments)(POST, '_view_cleanup');
+  },
+
+  _: function(args, start, withDoc) {
+    function request(method, path, options) {
+      if (!options) options = {};
+
+      self.request(
+        method,
+        path || request.p,
+        options.q || request.q,
+        options.b || request.b,
+        options.h || request.h,
+        options.f || request.f
+      );
+
+      return self;
+    }
+
+    // [id], [rev], [doc], [query], [header], [callback]
+    args = __slice.call(args, start);
+
+    request.f = isFunction(args[args.length - 1]) && args.pop();
+    request.p = isString(args[0]) && encodeURI(args.shift());
+
+    var self = this
+      , rev = isString(args[0]) && encodeURI(args.shift());
+
+    request.q = args[withDoc ? 1 : 0] || {};
+    if (rev) request.q.rev = rev;
+    request.h = args[withDoc ? 2 : 1] || {};
+    request.b = withDoc && args[0];
+
+    return request;
   }
 
 };
-
-function unpackDocArgs(args, withDoc) {
-  // [id, rev], [doc], [query], [callback]
-  args = __slice.call(args);
-
-  return {
-    f: isFunction(args[args.length - 1]) && args.pop(),
-    id: asString(args[0]) && encodeURI(args.shift()),
-    rev: asString(args[0]) && args.shift(),
-    q: args[withDoc ? 1 : 0],
-    doc: withDoc && args[0]
-  };
-}
 
 function parseViewOptions(q, body) {
   if (q) {
@@ -1015,7 +1045,7 @@ function parseViewOptions(q, body) {
   return body;
 }
 
-Database = Database;
+
 
 if (typeof window != 'undefined') {
   exports._ = window.clerk;
