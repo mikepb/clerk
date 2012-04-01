@@ -25,10 +25,43 @@ var __slice = [].slice;
 /**
     Create CouchDB client.
 
+    @param {Array|Object|String} servers List of node URIs or map of named
+      nodes to URIs or a single URI.
+    @return {Client|Function} If a list of servers is given, returns a function
+      to select a client, otherwise returns the client.
+*/
+
+module.exports = exports = function(servers) {
+  if (!servers || isString(servers)) {
+    return createClient(servers);
+  }
+
+  var serverNames = [], name, i = 0, len;
+
+  for (name in servers) {
+    servers[name] = createClient(servers[name]);
+    serverNames.push(name);
+  }
+
+  len = serverNames.length;
+
+  return function(name) {
+    var server;
+    if (!name) { name = serverNames[i++]; i %= len; }
+    if (!(server = servers[name])) throw new Error('no server configured');
+    return server;
+  };
+};
+
+exports.version = '0.1.0pre';
+
+/**
+    Create single CouchDB client.
+
     @param {String} uri Fully qualified URI.
  */
 
-module.exports = exports = function(uri) {
+function createClient(uri) {
   var client, match;
 
   if (uri) {
@@ -47,8 +80,6 @@ module.exports = exports = function(uri) {
 
   return client;
 };
-
-exports.version = '0.1.0pre';
 
 /**
     Restore global variable 'clerk' to original value and return the library as an object.

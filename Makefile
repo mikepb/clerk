@@ -24,7 +24,7 @@ build:
 		-e '/\/\*(!|jshint)/,/\*\//d' \
 		-e "s/'(GET|HEAD|POST|PUT|DELETE|COPY)'/\1/g" \
 		-e 's/exports\.(Clerk|Client|Database) = (Clerk|Client|Database);//g' \
-		-e 's/exports\.(Clerk|Client|Database|extend|request|_request|_response|asString|isString|isObject|isFunction|unpackArgs)( =( )(function))?/\4\3\1/g' \
+		-e 's/exports\.(Clerk|Client|Database|createClient|request|_request|_response|extend|asString|isString|isObject|isFunction|unpackArgs)( =( )(function))?/\4\3\1/g' \
 		-e 's/\[\].slice/__slice/g' \
 		| cat $(HEADJS) - $(TAILJS) > $(OUTJS)
 	uglifyjs $(OUTJS) > $(MINJS)
