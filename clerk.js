@@ -111,15 +111,17 @@
       @param {String} uri Fully qualified URI.
    */
 
-  clerk.createClient = function(uri, type) {
-    var match, hasPath;
+  clerk.createClient = function(uri) {
+    var client, db;
 
     uri = clerk._parseURI(uri);
 
-    if (!type) type = /^https?:\/\/[^\/]+\/.+$/.test(uri.h) ?
-                      clerk.Database : clerk.Client;
+    if (db = /^(https?:\/\/[^\/]+).*?(\/[^\/]+)?$/.exec(uri.host)) {
+      uri.host = db[1], db = db[2] && decodeURIComponent(db[2]);
+    }
 
-    return new type(uri.h, { user: uri.u, pass: uri.p });
+    client = new clerk.Client(uri.host, uri);
+    return db ? client.database(db) : client;
   };
 
   clerk._parseURI = function(uri, match) {
@@ -127,9 +129,9 @@
       uri = uri.replace(/\/+/g, '\/').replace(/\/+$/g, '');
       if (match = /^(https?:\/\/)(?:([^@:]+):([^@]+)@)?([^\/]+)(.*)$/.exec(uri)) {
         return {
-          h: match[1] + match[4],
-          u: match[2] && decodeURIComponent(match[2]),
-          p: match[3] && decodeURIComponent(match[3])
+          host: match[1] + match[4],
+          user: match[2] && decodeURIComponent(match[2]),
+          pass: match[3] && decodeURIComponent(match[3])
         };
       }
     }
@@ -249,7 +251,7 @@
    */
 
   clerk.Client = function Client(uri, auth) {
-    this.uri = uri || 'http://127.0.0.1:5984';
+    this.uri = uri;
     this.auth = auth;
   };
 
