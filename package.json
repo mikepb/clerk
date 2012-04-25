@@ -1,7 +1,7 @@
 {
   "name": "clerk",
   "description": "CouchDB library for Node.js",
-  "version": "0.1.0pre",
+  "version": "0.2.0",
   "author": "Michael Phan-Ba <michael@mikepb.com>",
   "homepage": "https://github.com/mikepb/clerk",
   "repository": {
