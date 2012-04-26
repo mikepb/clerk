@@ -393,7 +393,7 @@
     config: function(/* [key], [query], [callback] */) {
       var request = this._(arguments);
       return request(GET,
-        '_config' + (request.p ? '/' + encodeURI(request.p) : '')
+        '_config' + (request.p ? '/' + encodeURIComponent(request.p) : '')
       );
     },
 
@@ -410,9 +410,9 @@
       @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-config.html#couchbase-api-config_config-section-key_put)
      */
 
-    setConfig: function(section, key, value /* [query], [headers], [callback] */) {
-      return this._(arguments, 3)(PUT,
-        '_config/' + encodeURIComponent(section) + '/' + encodeURIComponent(key)
+    setConfig: function(key, value /* [query], [headers], [callback] */) {
+      return this._(arguments, 2)(PUT,
+        '_config/' + encodeURIComponent(key)
       );
     },
 
@@ -428,9 +428,9 @@
       @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-config.html#couchbase-api-config_config-section-key_put)
      */
 
-    delConfig: function(section, key /* [query], [headers], [callback] */) {
-      return this._(arguments, 2)(DELETE,
-        '_config/' + encodeURIComponent(section) + '/' + encodeURIComponent(key)
+    delConfig: function(key /* [query], [headers], [callback] */) {
+      return this._(arguments, 1)(DELETE,
+        '_config/' + encodeURIComponent(key)
       );
     },
 
@@ -655,7 +655,7 @@
 
       if (!request.p) request.p = request.b._id;
       if (request.q.rev) {
-        request.b._rev = request.q.rev;
+        request.b._rev = decodeURIComponent(request.q.rev);
         delete request.q.rev;
       }
 
@@ -718,9 +718,10 @@
      */
 
     del: function(id, rev /* [query], [headers], [callback] */) {
+      var request = this._(arguments)(DELETE);
       // prevent acidentally deleting database
-      if (!id || !rev) throw new Error('missing id or rev');
-      return this._(arguments)(DELETE);
+      if (!request.q.id || !request.q.rev) throw new Error('missing id or rev');
+      return request;
     },
 
     /**
@@ -997,7 +998,7 @@
     compact: function(/* [design], [query], [headers], [callback] */) {
       var request = this._(arguments);
       return request(POST,
-        '_compact' + (request.p ? '/' + encodeURIComponent(request.p) : '')
+        '_compact' + (request.p ? '/' + request.p : '')
       );
     },
 
@@ -1039,7 +1040,7 @@
       request.p = isString(args[0]) && encodeURI(args.shift());
 
       var self = this
-        , rev = isString(args[0]) && encodeURI(args.shift());
+        , rev = isString(args[0]) && encodeURIComponent(args.shift());
 
       request.q = args[withDoc ? 1 : 0] || {};
       if (rev) request.q.rev = rev;

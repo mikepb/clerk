@@ -15,6 +15,7 @@ describe('Client', function(){
     it('should return Database object', function(){
       var db = this.client.database('test');
       expect(db).to.be.a(clerk.Database);
+      expect(db).to.have.property('uri', 'http://127.0.0.1:5984/test');
     });
   });
 
@@ -30,6 +31,15 @@ describe('Client', function(){
   });
 
   describe('#uuids', function(){
+
+    it('shoud return 1 uuid by default', function(done){
+      this.client.uuids(having(1, done));
+    });
+
+    shouldReturnUUIDs(1);
+    shouldReturnUUIDs(2);
+    shouldReturnUUIDs(3);
+    shouldReturnUUIDs(100);
 
     function having(n, done) {
       return function(err, body, status, headers, res) {
@@ -49,15 +59,6 @@ describe('Client', function(){
       });
     }
 
-    it('shoud return 1 uuid by default', function(done){
-      this.client.uuids(having(1, done));
-    });
-
-    shouldReturnUUIDs(1);
-    shouldReturnUUIDs(2);
-    shouldReturnUUIDs(3);
-    shouldReturnUUIDs(100);
-
   });
 
   describe('#info', function(){
@@ -70,6 +71,30 @@ describe('Client', function(){
         done(err);
       });
     });
+  });
+
+  describe('#stats', function(){
+  });
+
+  describe('#log', function(){
+  });
+
+  describe('#tasks', function(){
+  });
+
+  describe('#config', function(){
+  });
+
+  describe('#setConfig', function(){
+  });
+
+  describe('#delConfig', function(){
+  });
+
+  describe('#replicate', function(){
+  });
+
+  describe('#restart', function(){
   });
 
 });
