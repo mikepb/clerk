@@ -138,124 +138,7 @@
     return { h: uri || '' };
   };
 
-  /**
-      Service request and parse JSON response.
-
-      @param {String} [method] HTTP method.
-      @param {String} [path] HTTP path.
-      @param {Object} [query] HTTP query options.
-      @param {Object} [body] HTTP body.
-      @param {Object} [headers] HTTP headers.
-      @param {Function} callback Callback function.
-        @param {Error|null} error Error or `null` on success.
-        @param {Object} data Response data.
-        @param {Integer} status Response status code.
-        @param {Object} headers Response headers.
-   */
-
-  clerk.request = function(/* [method], [path], [query], [data], [headers], [callback] */) {
-    var self = this
-      , args = slice.call(arguments)
-      , callback = isFunction(args[args.length - 1]) && args.pop();
-
-    clerk._request(
-      args[0] || GET,                           // method
-      self.uri + (args[1] ? '/' + args[1] : ''),  // path
-      args[2],                                    // query
-      args[3] && JSON.stringify(args[3]) || '',   // body
-      args[4],                                    // headers
-      self.auth || {},                            // auth
-      callback
-    );
-
-    return this;
-  };
-
-  clerk._request = function(method, uri, query, body, headers, auth, callback) {
-    var xhr = new XMLHttpRequest(), header;
-
-    xhr.open(method, uri, true, auth.user, auth.pass);
-
-    if (headers) {
-      for (header in headers) {
-        xhr.setRequestHeader(header, headers[header]);
-      }
-    }
-
-    xhr.onreadystatechange = function() {
-      if (callback && xhr.readyState === 4) {
-        var headers = clerk._getHeaders(xhr)
-          , data = xhr.responseText
-          , err;
-
-        if (method == HEAD) {
-          data = headers;
-        } else {
-          try {
-            data = JSON.parse(data);
-          } catch (e) {
-            err = e;
-          }
-          if (!err) data = clerk._response(data);
-        }
-
-        callback(err, data, xhr.status, headers, xhr);
-      }
-    };
-
-    xhr.send(body);
-  };
-
-  clerk._response = function(json) {
-    var data = json.rows || json.results || json.uuids;
-
-    if (data) {
-      json = extend(data, json);
-    } else {
-      if (json.id) json._id = json.id;
-      if (json.rev) json._rev = json.rev;
-    }
-
-    return json;
-  };
-
-  clerk._headers = [
-    'cache-control',
-    'content-length',
-    'content-type',
-    'date',
-    'etag',
-    'server'
-  ];
-
-  clerk._getHeaders = function(xhr) {
-    var headers = {}
-      , header, i = 0;
-
-    while (header = clerk._headers[i++]) {
-      headers[header] = xhr.getResponseHeader(header);
-    }
-
-    return headers;
-  };
-
-  /**
-      CouchDB client.
-
-      @param {String} uri Fully qualified URI.
-      @param {Object} [options] Options.
-        @param {Object} [options.auth] Authentication credentials.
-          @param {String} [options.auth.user] Username.
-          @param {String} [options.auth.pass] Password.
-      @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Complete_HTTP_API_Reference)
-   */
-
-  clerk.Client = function Client(uri, auth) {
-    this.uri = uri;
-    this.auth = auth;
-  };
-
-  clerk.Client.prototype = {
+  var Base = clerk.Base = {
 
     /**
         Service request and parse JSON response.
@@ -272,8 +155,121 @@
           @param {Object} headers Response headers.
      */
 
-    // [[[[[method], path], query], data], headers], [callback]
-    request: clerk.request,
+    request: function(/* [method], [path], [query], [data], [headers], [callback] */) {
+      var self = this
+        , args = slice.call(arguments)
+        , callback = isFunction(args[args.length - 1]) && args.pop();
+
+      self._request(
+        args[0] || GET,                             // method
+        self.uri + (args[1] ? '/' + args[1] : ''),  // path
+        args[2],                                    // query
+        args[3] && JSON.stringify(args[3]) || '',   // body
+        args[4],                                    // headers
+        self.auth || {},                            // auth
+        callback
+      );
+
+      return self;
+    },
+
+    _request: function(method, uri, query, body, headers, auth, callback) {
+      var self = this
+        , xhr = new XMLHttpRequest()
+        , header, key, qval;
+
+      if (query) {
+        qval = [];
+        for (key in query) {
+          qval.push(encodeURIComponent(key) + '=' + encodeURIComponent(query[key]));
+        }
+        uri += '?' + qval.join('&');
+      }
+
+      xhr.open(method, uri, true, auth.user, auth.pass);
+
+      if (headers) {
+        for (header in headers) {
+          xhr.setRequestHeader(header, headers[header]);
+        }
+      }
+
+      xhr.onreadystatechange = function() {
+        if (callback && xhr.readyState === 4) {
+          var headers = self._getHeaders(xhr)
+            , data = xhr.responseText
+            , err;
+
+          if (method == HEAD) {
+            data = headers;
+          } else {
+            try {
+              data = JSON.parse(data);
+            } catch (e) {
+              err = e;
+            }
+            if (!err) data = self._response(data);
+          }
+
+          callback(err, data, xhr.status, headers, xhr);
+        }
+      };
+
+      xhr.send(body);
+    },
+
+    _response: function(json) {
+      var data = json.rows || json.results || json.uuids;
+
+      if (data) {
+        json = extend(data, json);
+      } else {
+        if (json.id) json._id = json.id;
+        if (json.rev) json._rev = json.rev;
+      }
+
+      return json;
+    },
+
+    _headers: [
+      'cache-control',
+      'content-length',
+      'content-type',
+      'date',
+      'etag',
+      'server'
+    ],
+
+    _getHeaders: function(xhr) {
+      var headers = {}
+        , header, i = 0;
+
+      while (header = this._headers[i++]) {
+        headers[header] = xhr.getResponseHeader(header);
+      }
+
+      return headers;
+    }
+
+  };
+
+  /**
+      CouchDB client.
+
+      @param {String} uri Fully qualified URI.
+      @param {Object} [options] Options.
+        @param {Object} [options.auth] Authentication credentials.
+          @param {String} [options.auth.user] Username.
+          @param {String} [options.auth.pass] Password.
+      @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Complete_HTTP_API_Reference)
+   */
+
+  var Client = clerk.Client = function(uri, auth) {
+    this.uri = uri;
+    this.auth = auth;
+  };
+
+  Client = Client.prototype = {
 
     /**
       Select database to manipulate.
@@ -314,7 +310,7 @@
      */
 
     uuids: function(count /* [query], [headers], [callback] */) {
-      var request = this._(arguments, 1);
+      var request = this._(arguments, +count === count ? 1 : 0);
       if (count > 1) request.q.count = count;
       return request(GET, '_uuids');
     },
@@ -518,32 +514,14 @@
       @param {String} options Database name.
    */
 
-  clerk.Database = function Database(client, name, auth) {
+  var Database = clerk.Database = function(client, name, auth) {
     this.client = client;
     this.name = name;
     this.uri = client.uri + '/' + encodeURIComponent(name);
     this.auth = auth;
   };
 
-  clerk.Database.prototype = {
-
-    /**
-        Service request and parse JSON response.
-
-        @param {String} [method] HTTP method.
-        @param {String} [path] HTTP path.
-        @param {Object} [query] HTTP query options.
-        @param {Object} [body] HTTP body.
-        @param {Object} [headers] HTTP headers.
-        @param {Function} callback Callback function.
-          @param {Error|null} error Error or `null` on success.
-          @param {Object} data Response data.
-          @param {Integer} status Response status code.
-          @param {Object} headers Response headers.
-     */
-
-    // [[[[[method], path], query], data], headers], [callback]
-    request: clerk.request,
+  Database = Database.prototype = {
 
     /**
         Create database.
@@ -1087,6 +1065,8 @@
     }
 
   };
+
+  Client.__proto__ = Database.__proto__ = clerk.Base;
 
 })(
   typeof module != 'undefined' && module,

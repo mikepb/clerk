@@ -13,7 +13,7 @@ build:
 	uglifyjs $(OUTJS) > $(MINJS)
 
 test:
-	mocha --reporter $(REPORTER) test/*-test.coffee
+	mocha --reporter $(REPORTER) --require expect.js
 
 browser-test:
 	jade src/test/index.jade

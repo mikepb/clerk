@@ -4,6 +4,3 @@ npm-debug.log
 
 # Mac OS X
 .DS_Store
-
-# Compiled tests
-test
