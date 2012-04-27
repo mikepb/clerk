@@ -158,14 +158,17 @@
     request: function(/* [method], [path], [query], [data], [headers], [callback] */) {
       var self = this
         , args = slice.call(arguments)
-        , callback = isFunction(args[args.length - 1]) && args.pop();
+        , callback = isFunction(args[args.length - 1]) && args.pop()
+        , headers = args[4] || {};
+
+      headers['Content-Type'] = 'application/json';
 
       self._request(
         args[0] || GET,                             // method
         self.uri + (args[1] ? '/' + args[1] : ''),  // path
         args[2],                                    // query
         args[3] && JSON.stringify(args[3]) || '',   // body
-        args[4],                                    // headers
+        headers,                                    // headers
         self.auth || {},                            // auth
         callback
       );
@@ -202,7 +205,7 @@
 
           if (method == HEAD) {
             data = headers;
-          } else {
+          } else if (data) {
             try {
               data = JSON.parse(data);
             } catch (e) {
@@ -361,7 +364,12 @@
      */
 
     log: function(/* [query], [headers], [callback] */) {
-      return this._(arguments)(GET, '_log');
+      var request = this._(arguments), callback = request.f;
+      request.f = function(e) {
+        if (e instanceof SyntaxError) e = null;
+        callback.apply(this, arguments);
+      };
+      return request(GET, '_log');
     },
 
     /**

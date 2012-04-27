@@ -74,12 +74,39 @@ describe('Client', function(){
   });
 
   describe('#stats', function(){
+    it('shoud return server stats', function(done){
+      this.client.stats(function(err, body, status, headers, res){
+        if (!err) {
+          expect(body).to.have.property('couchdb');
+          expect(body).to.have.property('httpd');
+          expect(body).to.have.property('httpd_request_methods');
+          expect(body).to.have.property('httpd_status_codes');
+        }
+        done(err);
+      });
+    });
   });
 
   describe('#log', function(){
+    it('shoud return server log lines', function(done){
+      this.client.log(function(err, body, status, headers, res){
+        if (!err) {
+          expect(body).to.be.ok();
+        }
+        done(err);
+      });
+    });
   });
 
   describe('#tasks', function(){
+    it('shoud return server running tasks', function(done){
+      this.client.tasks(function(err, body, status, headers, res){
+        if (!err) {
+          expect(body).to.be.an('array');
+        }
+        done(err);
+      });
+    });
   });
 
   describe('#config', function(){
@@ -95,6 +122,16 @@ describe('Client', function(){
   });
 
   describe('#restart', function(){
+    it('shoud restart server', function(done){
+      this.client.restart(function(err, body, status, headers, res){
+        // Server restarts closes connection prematurely
+        // if (!err) {
+        //   expect(body).to.have.property('ok', true);
+        // }
+        // done(err);
+        done();
+      });
+    });
   });
 
 });
