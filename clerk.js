@@ -316,7 +316,7 @@
       if (data) {
         for (len = data.length; i < len; i++) {
           item = data[i] = meta(data[i]);
-          if (json.rows) item.doc = meta(item.doc);
+          if (json.rows && item.doc) item.doc = meta(item.doc);
         }
         extend(data, json);
         data.json = json;
