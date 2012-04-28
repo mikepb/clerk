@@ -118,13 +118,13 @@
 
   function clerk(servers) {
     if (!servers || isString(servers)) {
-      return clerk.createClient(servers);
+      return clerk.make(servers);
     }
 
     var serverNames = [], name, i = 0, len;
 
     for (name in servers) {
-      servers[name] = clerk.createClient(servers[name]);
+      servers[name] = clerk.make(servers[name]);
       serverNames.push(name);
     }
 
@@ -164,7 +164,7 @@
    *    returned. Otherwise, a `Client` instance is returned.
    */
 
-  clerk.createClient = function(uri) {
+  clerk.make = function(uri) {
     var client, db;
 
     uri = clerk._parseURI(uri);
