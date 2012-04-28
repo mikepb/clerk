@@ -233,13 +233,13 @@ describe('Database', function(){
         });
       });
 
-      describe('#dels', function(){
+      describe('#del', function(){
 
         beforeEach(bulkDocuments);
 
         it('should be ok', function(done){
           var docs = this.docs;
-          this.db.dels(docs, function(err, body, status, headers, res){
+          this.db.del(docs, function(err, body, status, headers, res){
             var i = 0, len, item, doc;
             if (!err) {
               for (len = body.length; i < len; i++) {

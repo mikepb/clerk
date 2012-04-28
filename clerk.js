@@ -228,27 +228,26 @@ Apache License
      */
 
     request: function(/* [method], [path], [query], [data], [headers], [callback] */) {
-      var self = this
-        , args = slice.call(arguments)
+      var args = slice.call(arguments)
         , callback = isFunction(args[args.length - 1]) && args.pop()
         , headers = args[4] || {}
         , path = args[1] ? '/' + args[1] : '';
 
       if (!('Content-Type' in headers)) headers['Content-Type'] = 'application/json';
 
-      self._request(
+      this._request(
         args[0] || GET,                             // method
-        self.uri + path,                            // uri
+        this.uri + path,                            // uri
         args[2],                                    // query
         args[3] && JSON.stringify(args[3],
-          /^\/_design/.test(path) && self._replacer
+          /^\/_design/.test(path) && this._replacer
         ) || '',                                    // body
         headers,                                    // headers
-        self.auth || {},                            // auth
+        this.auth || {},                            // auth
         callback
       );
 
-      return self;
+      return this;
     },
 
     /**
@@ -478,8 +477,8 @@ Apache License
      */
 
     database: function(name) {
-      var self = this, db = self._db;
-      return db[name] || (db[name] = new clerk.Database(self, name, self.auth));
+      var db = this._db;
+      return db[name] || (db[name] = new clerk.Database(this, name, this.auth));
     },
 
     /**
@@ -714,6 +713,7 @@ Apache License
      *     @param [result.contentLength] Content length. Only available when
      *       getting metadata for single document.
      * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#HEAD)
      */
 
     head: function(/* [id], [query], [headers], callback */) {
@@ -771,6 +771,7 @@ Apache License
      * @param {Object} doc Document data. Requires `id` and `rev`.
      * @param {String} [options] Options.
      * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#PUT)
      */
 
     put: function(/* [doc], [query], [headers], [callback] */) {
@@ -781,19 +782,32 @@ Apache License
     },
 
     /**
-     * Delete document.
+     * Delete document(s).
      *
-     * @param {String} id Document ID.
-     * @param {String} rev Document revision.
+     * @param {String} doc Document or document ID.
      * @param {Object} [query] HTTP query options.
      * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#DELETE)
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
      */
 
-    del: function(doc /* [query], [headers], [callback] */) {
-      var request = this._(arguments, 0, 1);
-      // prevent acidentally deleting database
-      if (!request.p) throw new Error('missing id');
-      return request(DELETE);
+    del: function(docs /* [query], [headers], [callback] */) {
+      if (isArray(docs)) {
+        var i = 0, len, doc;
+        for (len = docs.length; i < len; i++) {
+          doc = docs[i], docs[i] = {
+            _id: doc._id || doc.id,
+            _rev: doc._rev || doc.rev,
+            _deleted: true
+          };
+        }
+        return this.bulk.apply(this, arguments);
+      } else {
+        var request = this._(arguments, 0, 1);
+        // prevent acidentally deleting database
+        if (!request.p) throw new Error('missing id');
+        return request(DELETE);
+      }
     },
 
     /**
@@ -815,6 +829,7 @@ Apache License
      *     for `target.id`.
      * @param {Object} [query] HTTP query options.
      * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#COPY)
      */
 
     copy: function(source, target /* [query], [headers], [callback] */) {
@@ -953,8 +968,7 @@ Apache License
      */
 
     follow: function(/* [query], [headers], callback */) {
-      var self = this
-        , request = self._(arguments)
+      var request = this._(arguments)
         , callback = request.f;
 
       request.q.feed = 'longpoll';
@@ -964,10 +978,10 @@ Apache License
           doc = body[i];
           if (stop = callback.apply(this, arguments) === false || err) break;
         }
-        if (!stop) self._changes(request);
+        if (!stop) this._changes(request);
       };
 
-      return self._changes(request);
+      return this._changes(request);
     },
 
     /**
@@ -997,30 +1011,6 @@ Apache License
     bulk: function(docs /* [query], [headers], [callback] */) {
       var request = this._(arguments, 1); request.q.docs = docs;
       return request(POST, '_bulk_docs', { q: 0, b: request.q });
-    },
-
-    /**
-     * Delete documents in bulk.
-     *
-     * @param {Object[]} docs Array of documents to insert or update.
-     *   @param {String} doc._id Document ID.
-     *   @param {String} doc._rev Document revision.
-     * @param {Object} [query] HTTP query options.
-     *   @param {Boolean} [query.all_or_nothing] Use all-or-nothing semantics.
-     * @return This object for chaining.
-     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
-     */
-
-    dels: function(docs) {
-      var i = 0, len = docs.length, doc;
-      for (; i < len; i++) {
-        doc = docs[i], docs[i] = {
-          _id: doc._id || doc.id,
-          _rev: doc._rev || doc.rev,
-          _deleted: true
-        };
-      }
-      return this.bulk.apply(this, arguments);
     },
 
     /**
@@ -1100,10 +1090,9 @@ Apache License
      */
 
     replicate: function(options /* [query], [headers], [callback] */) {
-      var self = this, name = self.name, client = self.client;
-      if (!options.source) options.source = name;
-      if (!options.target) options.target = name;
-      return client.replicate.apply(client, arguments);
+      if (!options.source) options.source = this.name;
+      if (!options.target) options.target = this.name;
+      return this.client.replicate.apply(this.client, arguments);
     },
 
     /**
