@@ -264,7 +264,7 @@ Apache License
      *   @param {Object} data Response data.
      *   @param {Integer} status Response status code.
      *   @param {Object} headers Response headers.
-     * @return This object for chaining.
+     * @api private
      */
 
     _request: function(method, uri, query, body, headers, auth, callback) {
