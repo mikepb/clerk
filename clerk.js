@@ -390,6 +390,52 @@
       }
 
       return headers;
+    },
+
+    /**
+     * Parse arguments.
+     *
+     * @param {Array} args The arguments.
+     * @param {Integer} start The index from which to start reading arguments.
+     * @param {Boolean} withDoc Set to `true` if the doc source is given as a
+     *   parameter before HTTP query options.
+     * @return This object for chaining.
+     * @api private
+     */
+
+    _: function(args, start, withDoc) {
+      var self = this, doc, id, rev;
+
+      function request(method, path, options) {
+        if (!options) options = {};
+
+        self.request(
+          method,
+          path || request.p,
+          'q' in options ? options.q : request.q,
+          'b' in options ? options.b : request.b,
+          'h' in options ? options.h : request.h,
+          'f' in options ? options.f : request.f
+        );
+
+        return self;
+      }
+
+      // [id], [doc], [query], [header], [callback]
+      args = slice.call(args, start);
+
+      request.f = isFunction(args[args.length - 1]) && args.pop();
+      request.p = isString(args[0]) && encodeURI(args.shift());
+      request.q = args[withDoc ? 1 : 0] || {};
+      request.h = args[withDoc ? 2 : 1] || {};
+
+      if (withDoc) {
+        doc = request.b = args[0];
+        if (id = request.p || doc._id || doc.id) request.p = id;
+        if (rev = request.q.rev || doc._rev || doc.rev) request.q.rev = rev;
+      }
+
+      return request;
     }
 
   };
@@ -575,41 +621,6 @@
 
     restart: function(/* [path], [query], [headers], [callback] */) {
       return this._(arguments)(POST, '_restart');
-    },
-
-    /**
-     * Parse arguments.
-     *
-     * @api private
-     */
-
-    _: function(args, start) {
-      var self = this;
-
-      function request(method, path, options) {
-        if (!options) options = {};
-
-        self.request(
-          method,
-          path || request.p,
-          'q' in options ? options.q : request.q,
-          options.b,
-          'h' in options ? options.h : request.h,
-          'f' in options ? options.f : request.f
-        );
-
-        return self;
-      }
-
-      // [query], [header], [callback]
-      args = slice.call(args, start);
-
-      request.f = isFunction(args[args.length - 1]) && args.pop();
-      request.p = isString(args[0]) && args.shift();
-      request.q = args[0] || {};
-      request.h = args[1] || {};
-
-      return request;
     }
 
   };
@@ -683,8 +694,9 @@
     /**
      * Fetch document.
      *
+     * Set `rev` in `query`.
+     *
      * @param {String} id Document ID.
-     * @param {String} [rev] Document revision.
      * @param {Object} [query] HTTP query options.
      *   @param {Boolean} [query.revs] Fetch list of revisions.
      *   @param {Boolean} [query.revs_info] Fetch detailed revision information.
@@ -696,7 +708,7 @@
      * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#GET)
      */
 
-    get: function(/* id, [rev], [query], [headers], [callback] */) {
+    get: function(/* [id], [query], [headers], [callback] */) {
       return this._(arguments)(GET);
     },
 
@@ -770,26 +782,15 @@
     /**
      * Put document in database.
      *
-     * @param {String} [id] Document ID. If provided, also requires rev.
-     * @param {String} [rev] Document revision. If provided, also requires id.
-     * @param {Object} doc Document data. Requires `_id` property.
+     * @param {Object} doc Document data. Requires `id` and `rev`.
      * @param {String} [options] Options.
      * @return This object for chaining.
      */
 
-    put: function(/* [id], [rev], [doc], [query], [headers], [callback] */) {
+    put: function(/* [doc], [query], [headers], [callback] */) {
       var request = this._(arguments, 0, 1);
-
-      if (!request.p) request.p = request.b._id || request.b.id;
-
-      if (request.q.rev) {
-        request.b._rev = decodeURIComponent(request.q.rev);
-        delete request.q.rev;
-      }
-
       // prevent acidentally creating database
       if (!request.p) throw new Error('missing id');
-
       return request(PUT);
     },
 
@@ -802,10 +803,10 @@
      * @return This object for chaining.
      */
 
-    del: function(/* id, rev, [query], [headers], [callback] */) {
-      var request = this._(arguments);
+    del: function(doc /* [query], [headers], [callback] */) {
+      var request = this._(arguments, 0, 1);
       // prevent acidentally deleting database
-      if (!request.p || !request.q.rev) throw new Error('missing id or rev');
+      if (!request.p) throw new Error('missing id');
       return request(DELETE);
     },
 
@@ -961,6 +962,7 @@
 
     /**
      * Get database changes.
+     *
      * @see `#changes()`.
      */
 
@@ -1061,6 +1063,41 @@
     },
 
     /**
+     * Download attachment from document.
+     *
+     * @param {Object|String} docOrId Document or document ID.
+     * @param {String} attachmentName Attachment name.
+     * @param {Object} [query] HTTP query options.
+     * @return This object for chaining.
+     */
+
+    attachment: function(doc, attachmentName /* [query], [headers], [callback] */) {
+      var request = this._(arguments, 2);
+      var path = encodeURIComponent(doc._id || doc.id || doc) + '/' + encodeURIComponent(attachmentName);
+      return request('GET', path, options);
+    },
+
+    /**
+     * Upload attachment to document.
+     *
+     * Set the `Content-Type` header.
+     *
+     * @param {Object} [doc] Document. Requires `id`. `rev` can be specified
+     *   here or in `query`.
+     * @param {String} attachmentName Attachment name.
+     * @param {Object} data Data.
+     * @return This object for chaining.
+     */
+
+    attach: function(doc, attachmentName, data /* [query], [headers], [callback] */) {
+      var request = this._(arguments, 3);
+      request.p = encodeURIComponent(doc._id || doc.id) + '/' + encodeURIComponent(attachmentName);
+      if (!request.q.rev) request.q.rev = doc._rev || doc.rev;
+      request.q.body = data;
+      return request(PUT, path);
+    },
+
+    /**
      * Replicate database.
      *
      * This convenience function sets `options.source` and `options.target` to
@@ -1076,7 +1113,7 @@
      * @return This object for chaining.
      */
 
-    replicate: function(options) {
+    replicate: function(options /* [query], [headers], [callback] */) {
       var self = this, name = self.name, client = self.client;
       if (!options.source) options.source = name;
       if (!options.target) options.target = name;
@@ -1128,50 +1165,6 @@
 
     vacuum: function(/* [query], [headers], [callback] */) {
       return this._(arguments)(POST, '_view_cleanup');
-    },
-
-    /**
-     * Parse arguments.
-     *
-     * @param {Array} args The arguments.
-     * @param {Integer} start The index from which to start reading arguments.
-     * @param {Boolean} withDoc Set to `true` if the doc source is given as a
-     *   parameter before HTTP query options.
-     * @return This object for chaining.
-     * @api private
-     */
-
-    _: function(args, start, withDoc) {
-      function request(method, path, options) {
-        if (!options) options = {};
-
-        self.request(
-          method,
-          path || request.p,
-          'q' in options ? options.q : request.q,
-          'b' in options ? options.b : request.b,
-          'h' in options ? options.h : request.h,
-          'f' in options ? options.f : request.f
-        );
-
-        return self;
-      }
-
-      // [id], [rev], [doc], [query], [header], [callback]
-      args = slice.call(args, start);
-
-      request.f = isFunction(args[args.length - 1]) && args.pop();
-      request.p = isString(args[0]) && encodeURI(args.shift());
-
-      var self = this
-        , rev = isString(args[0]) && encodeURIComponent(args.shift());
-
-      request.q = args[withDoc ? 1 : 0] || {};
-      if (rev) request.q.rev = rev;
-      request.h = args[withDoc ? 2 : 1] || {};
-      request.b = withDoc && args[0];
-
-      return request;
     },
 
     /**

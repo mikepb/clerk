@@ -108,7 +108,6 @@ describe('Database', function(){
       });
 
       describe('#put', function(){
-
         it('shoud store document', function(done){
           var doc = this.doc;
           this.db.put(doc, function(err, body, status, headers, res){
@@ -120,20 +119,6 @@ describe('Database', function(){
             done(err);
           });
         });
-
-        it('shoud store document at id', function(done){
-          var doc = this.doc, id = doc._id;
-          delete doc._id;
-          this.db.put(id, doc, function(err, body, status, headers, res){
-            if (!err) {
-              shouldBeOk(body);
-              shouldHaveIdRev(body, id, '1-15f65339921e497348be384867bb940f');
-              shouldHave2xxStatus(status);
-            }
-            done(err);
-          });
-        });
-
       });
 
     });
@@ -191,7 +176,7 @@ describe('Database', function(){
       describe('#del', function(){
         it('shoud be ok', function(done){
           var doc = this.doc;
-          this.db.del(doc._id, doc._rev, function(err, body, status, headers, res){
+          this.db.del(doc, function(err, body, status, headers, res){
             if (!err) {
               shouldBeOk(body);
               shouldHave2xxStatus(status);
