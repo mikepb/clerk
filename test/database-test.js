@@ -1,5 +1,3 @@
-/*jslint undef:true */
-
 if (typeof require != 'undefined') {
   var clerk = require('clerk')
     , expect = require('expect.js');
@@ -418,12 +416,6 @@ describe('Database', function(){
     });
 
   });
-
-  function forceDestroyDB(done) {
-    this.db.destroy(function(){
-      done();
-    });
-  }
 
   function putDocument(done) {
     var doc = this.doc;

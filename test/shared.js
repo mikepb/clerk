@@ -4,6 +4,12 @@ if (typeof require != 'undefined') {
 
 (function(){
 
+  this.forceDestroyDB = function(done) {
+    this.db.destroy(function(){
+      done();
+    });
+  };
+
   this.shouldBeOk = function(body) {
     expect(body).to.have.property('ok', true);
   };

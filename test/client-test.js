@@ -206,6 +206,41 @@ describe('Client', function(){
   });
 
   describe('#replicate', function(){
+
+    beforeEach(function(){
+      this.db = this.client.database('clerk-test');
+      this.replica = this.client.database('clerk-replicate-test');
+    });
+
+    beforeEach(forceDestroyDB);
+
+    beforeEach(function(done){
+      this.db.create(done);
+    });
+
+    beforeEach(function(done){
+      this.replica.create(done);
+    });
+
+    afterEach(function(done){
+      this.replica.destroy(done);
+    });
+
+    afterEach(function(done){
+      this.db.destroy(done);
+    });
+
+    it('shoud be ok', function(done){
+      var options = { source: this.db.name, target: this.replica.name };
+      this.client.replicate(options, function(err, body, status, headers, res){
+        if (!err) {
+          shouldBeOk(body);
+          shouldHave2xxStatus(status);
+        }
+        done(err);
+      });
+    });
+
   });
 
   // this is a problematic test
