@@ -761,8 +761,8 @@
 
     copy: function(source, target /* [query], [headers], [callback] */) {
       var request = this._(arguments, 2)
-        , sourcePath = encodeURIComponent(source.id || source._id)
-        , targetPath = encodeURIComponent(target.id || target._id)
+        , sourcePath = encodeURIComponent(source.id || source._id || source)
+        , targetPath = encodeURIComponent(target.id || target._id || target)
         , sourceRev = source.rev || source._rev
         , targetRev = target.rev || target._rev;
 
