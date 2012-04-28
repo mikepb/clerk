@@ -81,6 +81,18 @@
   }
 
   /**
+   * Check if value is an array.
+   *
+   * @param {Object} that That value to check.
+   * @return {Boolean} `true` if array, `false` otherwise.
+   * @api private
+   */
+
+  function isArray(that) {
+    return asString(that) == '[object Array]';
+  }
+
+  /**
    * Check if value is a function.
    *
    * @param {Object} that That value to check.
@@ -309,7 +321,7 @@
      */
 
     _response: function(json) {
-      var data = json.rows || json.results || json.uuids || json.slice && json
+      var data = json.rows || json.results || json.uuids || isArray(json) && json
         , meta = this._meta
         , i = 0, len, item;
 
@@ -318,8 +330,8 @@
           item = data[i] = meta(data[i]);
           if (json.rows && item.doc) item.doc = meta(item.doc);
         }
-        extend(data, json);
-        data.json = json;
+        data = slice.call(data);
+        extend(data.__proto__ = [], json).json = json;
       } else {
         data = meta(json);
       }
@@ -352,11 +364,10 @@
     _meta: function(doc) {
       var hasId = !doc.id ^ !doc._id
         , hasRev = !doc.rev ^ !doc._rev
-        , proto = function(){};
+        , proto;
 
       if (hasId || hasRev) {
-        doc = extend(new proto(), doc);
-        proto = proto.prototype;
+        proto = extend(doc.__proto__ = {}, doc);
         if (hasId) proto._id = doc.id = doc._id || doc.id;
         if (hasRev) proto._rev = doc.rev = doc._rev || doc.rev;
       }

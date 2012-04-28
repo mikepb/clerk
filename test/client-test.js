@@ -45,10 +45,9 @@ describe('Client', function(){
     function having(n, done) {
       return function(err, body, status, headers, res) {
         if (!err) {
-          expect(body).to.have.property('uuids', body);
+          expect(body).to.have.property('uuids');
           expect(body).to.be.an('array');
           expect(body).to.have.length(n);
-          expect(body).to.be(body.uuids);
           shouldHave2xxStatus(status);
         }
         done(err);
