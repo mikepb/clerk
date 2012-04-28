@@ -159,21 +159,28 @@
       var self = this
         , args = slice.call(arguments)
         , callback = isFunction(args[args.length - 1]) && args.pop()
-        , headers = args[4] || {};
+        , headers = args[4] || {}
+        , path = args[1] ? '/' + args[1] : '';
 
       headers['Content-Type'] = 'application/json';
 
       self._request(
         args[0] || GET,                             // method
-        self.uri + (args[1] ? '/' + args[1] : ''),  // path
+        self.uri + path,                            // path
         args[2],                                    // query
-        args[3] && JSON.stringify(args[3]) || '',   // body
+        args[3] && JSON.stringify(args[3],
+          /^\/_design/.test(path) && self._replacer
+        ) || '',                                    // body
         headers,                                    // headers
         self.auth || {},                            // auth
         callback
       );
 
       return self;
+    },
+
+    _replacer: function(key, val) {
+      return isFunction(val) ? val.toString() : val;
     },
 
     _request: function(method, uri, query, body, headers, auth, callback) {
@@ -223,16 +230,37 @@
     },
 
     _response: function(json) {
-      var data = json.rows || json.results || json.uuids;
+      var data = json.rows || json.results || json.uuids || json.slice && json
+        , meta = this._meta
+        , i = 0, len, item;
 
       if (data) {
-        json = extend(data, json);
+        for (len = data.length; i < len; i++) {
+          item = data[i] = meta(data[i]);
+          if (json.rows) item.doc = meta(item.doc);
+        }
+        data = extend(data, json);
+        data.json = json;
       } else {
-        if (!json.id ^ !json._id) json._id = json.id = json._id || json.id;
-        if (!json.rev ^ !json._rev) json._rev = json.rev = json._rev || json.rev;
+        data = meta(json);
       }
 
-      return json;
+      return data;
+    },
+
+    _meta: function(doc) {
+      var hasId = !doc.id ^ !doc._id
+        , hasRev = !doc.rev ^ !doc._rev
+        , proto = function(){};
+
+      if (hasId || hasRev) {
+        doc = extend(new proto(), doc);
+        proto = proto.prototype;
+        if (hasId) proto._id = doc.id = doc._id || doc.id;
+        if (hasRev) proto._rev = doc.rev = doc._rev || doc.rev;
+      }
+
+      return doc;
     },
 
     _headers: [
@@ -271,6 +299,7 @@
   var Client = clerk.Client = function(uri, auth) {
     this.uri = uri;
     this.auth = auth;
+    this._db = {};
   };
 
   Client = Client.prototype = {
@@ -283,7 +312,8 @@
      */
 
     database: function(name) {
-      return new clerk.Database(this, name, this.auth);
+      var self = this, db = self._db;
+      return db[name] || (db[name] = new clerk.Database(self, name, self.auth));
     },
 
     /**
@@ -494,10 +524,10 @@
         self.request(
           method,
           path || request.p,
-          options.q || request.q,
+          'q' in options ? options.q : request.q,
           options.b,
-          options.h || request.h,
-          options.f || request.f
+          'h' in options ? options.h : request.h,
+          'f' in options ? options.f : request.f
         );
 
         return self;
@@ -705,6 +735,7 @@
       var request = this._(arguments, 0, 1);
 
       if (!request.p) request.p = request.b._id || request.b.id;
+
       if (request.q.rev) {
         request.b._rev = decodeURIComponent(request.q.rev);
         delete request.q.rev;
@@ -786,7 +817,7 @@
             order by key, returning documents in descending order by key.
           @param {Integer} [options.skip] Skip this many records before
             returning results.
-          @param {Boolean} [options.fetch=false] Include document source for
+          @param {Boolean} [options.include_docs=false] Include document source for
             each result.
           @param {Boolean} [options.include_end=true] Include `options.endkey`
             in results.
@@ -804,53 +835,6 @@
       var request = this._(arguments)
         , body = this._parseViewOptions(request.q);
       return request(body ? POST : GET, '_all_docs', { b: body });
-    },
-
-    /**
-        Insert or update documents in bulk.
-
-        @param {Object[]} docs Array of documents to insert or update.
-          @param {String} [doc._id] Document ID.
-          @param {String} [doc._rev] Document revision.
-          @param {Boolean} [doc._deleted] Flag indicating whether this document
-            should be deleted.
-        @param {Object} [options] Options.
-          @param {Boolean} [options.all_or_nothing] Use all-or-nothing semantics.
-        @param {Function} [callback] Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object[]} [callback.results] Array with results of each
-            document in the bulk operation.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-        @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
-        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-bulk-docs_post)
-     */
-
-    bulk: function(docs /* [query], [headers], [callback] */) {
-      var request = this._(arguments, 1); request.q.docs = docs;
-      return request(POST, '_bulk_docs', { q: 0, b: request.q });
-    },
-
-    /**
-        Delete documents in bulk.
-
-        @param {Object[]} docs Array of documents to insert or update.
-          @param {String} doc._id Document ID.
-          @param {String} doc._rev Document revision.
-        @param {Object} [options] Options.
-          @param {Boolean} [options.all_or_nothing] Use all-or-nothing semantics.
-        @param {Function} [callback] Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object[]} [callback.results] Array with results of each
-            document in the bulk operation.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-        @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
-        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-bulk-docs_post)
-     */
-
-    delAll: function(docs, query, headers, callback) {
-      var i = 0, len = docs.length, doc;
-      while (i < len) if (doc = docs[i++]) doc._deleted = true;
-      this.bulk(docs, query, headers, callback);
     },
 
     /**
@@ -905,6 +889,59 @@
 
       body = this._parseViewOptions(request.q, body);
       return request(body ? POST : GET, path, { b: body });
+    },
+
+    /**
+        Insert or update documents in bulk.
+
+        @param {Object[]} docs Array of documents to insert or update.
+          @param {String} [doc._id] Document ID.
+          @param {String} [doc._rev] Document revision.
+          @param {Boolean} [doc._deleted] Flag indicating whether this document
+            should be deleted.
+        @param {Object} [options] Options.
+          @param {Boolean} [options.all_or_nothing] Use all-or-nothing semantics.
+        @param {Function} [callback] Callback function.
+          @param {Error|null} callback.error Error or `null` on success.
+          @param {Object[]} [callback.results] Array with results of each
+            document in the bulk operation.
+          @param {ClientResponse} [callback.response] ClientResponse object.
+        @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
+        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-bulk-docs_post)
+     */
+
+    bulk: function(docs /* [query], [headers], [callback] */) {
+      var request = this._(arguments, 1); request.q.docs = docs;
+      return request(POST, '_bulk_docs', { q: 0, b: request.q });
+    },
+
+    /**
+        Delete documents in bulk.
+
+        @param {Object[]} docs Array of documents to insert or update.
+          @param {String} doc._id Document ID.
+          @param {String} doc._rev Document revision.
+        @param {Object} [options] Options.
+          @param {Boolean} [options.all_or_nothing] Use all-or-nothing semantics.
+        @param {Function} [callback] Callback function.
+          @param {Error|null} callback.error Error or `null` on success.
+          @param {Object[]} [callback.results] Array with results of each
+            document in the bulk operation.
+          @param {ClientResponse} [callback.response] ClientResponse object.
+        @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
+        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-bulk-docs_post)
+     */
+
+    delAll: function(docs) {
+      var i = 0, len = docs.length, doc;
+      for (; i < len; i++) {
+        doc = docs[i], docs[i] = {
+          _id: doc._id || doc.id,
+          _rev: doc._rev || doc.rev,
+          _deleted: true
+        };
+      }
+      return this.bulk.apply(this, arguments);
     },
 
     /**
@@ -1035,10 +1072,10 @@
         self.request(
           method,
           path || request.p,
-          options.q || request.q,
-          options.b || request.b,
-          options.h || request.h,
-          options.f || request.f
+          'q' in options ? options.q : request.q,
+          'b' in options ? options.b : request.b,
+          'h' in options ? options.h : request.h,
+          'f' in options ? options.f : request.f
         );
 
         return self;

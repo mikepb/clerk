@@ -12,15 +12,19 @@ describe('Database', function(){
     this.db = this.client.database('clerk-test');
   });
 
-  before(destroyDB);
+  before(forceDestroyDB);
 
   beforeEach(function(){
-    this.doc = { _id: '0' };
+    this.doc = { _id: '0', hello: 'world' };
+    this.docs = [];
+    for (var i = 1; i < 10; i++) {
+      this.docs.push({ _id: '' + i, hello: 'world' + i });
+    }
   });
 
   describe('#create', function(){
 
-    afterEach(destroyDB);
+    afterEach(forceDestroyDB);
 
     it('shoud create database', function(done){
       this.db.create(function(err, body, status, headers, res){
@@ -101,15 +105,30 @@ describe('Database', function(){
       });
 
       describe('#put', function(){
+
         it('shoud store document', function(done){
-          this.db.put('0', {}, function(err, body, status, headers, res){
+          var doc = this.doc;
+          this.db.put(doc, function(err, body, status, headers, res){
             if (!err) {
               shouldBeOk(body);
-              shouldHaveIdRev(body, '0', '1-967a00dff5e02add41819138abb3284d');
+              shouldHaveIdRev(body, doc._id, '1-15f65339921e497348be384867bb940f');
             }
             done(err);
           });
         });
+
+        it('shoud store document at id', function(done){
+          var doc = this.doc, id = doc._id;
+          delete doc._id;
+          this.db.put(id, doc, function(err, body, status, headers, res){
+            if (!err) {
+              shouldBeOk(body);
+              shouldHaveIdRev(body, id, '1-15f65339921e497348be384867bb940f');
+            }
+            done(err);
+          });
+        });
+
       });
 
     });
@@ -124,6 +143,7 @@ describe('Database', function(){
           this.db.get(this.doc._id, function(err, body, status, headers, res){
             if (!err) {
               shouldHaveIdRev(body, doc._id, doc._rev);
+              shouldBeDocument(body, doc);
             }
             done(err);
           });
@@ -153,7 +173,7 @@ describe('Database', function(){
           var doc = this.doc;
           this.db.post(doc, function(err, body, status, headers, res){
             if (!err) {
-              shouldHaveIdRev(body, doc._id, '2-7051cbe5c8faecd085a3fa619e6e6337');
+              shouldHaveIdRev(body, doc._id, '2-47661acbb62a2a63704c803bc0152f2b');
             }
             done(err);
           });
@@ -172,27 +192,141 @@ describe('Database', function(){
         });
       });
 
-      xdescribe('#copy', function(){
-        it('shoud return value', function(done){
-          this.db.copy(function(err, body, status, headers, res){
+      describe('#copy', function(){
+
+        it('shoud copy id to id', function(done){
+          shouldCopy.call(this, done, this.doc._id, '1', '1', '1-095d0517d4ee0271cc517163c4e465ff');
+        });
+
+        it('shoud copy doc to id', function(done){
+          shouldCopy.call(this, done, this.doc, '1', '1', '1-095d0517d4ee0271cc517163c4e465ff');
+        });
+
+        it('shoud copy doc to doc', function(done){
+          var target = { _id: '1' };
+          shouldCopy.call(this, done, this.doc, target, target._id, '1-095d0517d4ee0271cc517163c4e465ff');
+        });
+
+        it('shoud copy doc to doc with rev', function(done){
+          var target = { _id: '1', _rev: this.doc._rev };
+          shouldCopy.call(this, done, this.doc, target, target._id, '2-92c76f94974bbbb524cf9e18aedd3572');
+        });
+
+        function shouldCopy(done, source, target, id, rev) {
+          this.db.copy(source, target, function(err, body, status, headers, res){
             if (!err) {
-              shouldBeOk(body);
+              shouldHaveIdRev(body, id, rev);
+            }
+            done(err);
+          });
+        }
+
+      });
+
+    });
+
+    describe('batch', function(){
+
+      describe('#bulk', function(){
+        it('should be ok', function(done){
+          this.db.bulk(this.docs, function(err, body, status, headers, res){
+            if (!err) {
+              expect(body).to.be.an('array');
+              expect(body).to.have.length(9);
             }
             done(err);
           });
         });
       });
 
+      describe('#delAll', function(){
+
+        beforeEach(bulkDocuments);
+
+        it('should be ok', function(done){
+          var docs = this.docs;
+          this.db.delAll(docs, function(err, body, status, headers, res){
+            var i = 0, len, item, doc;
+            if (!err) {
+              for (len = body.length; i < len; i++) {
+                item = body[i], doc = docs[i];
+                shouldBeOk(item);
+                shouldHaveIdRev(item, doc._id, item._rev);
+              }
+            }
+            done(err);
+          });
+        });
+
+      });
+
     });
+
+    describe('querying documents', function(){
+
+      beforeEach(bulkDocuments);
+
+      describe('#all', function(){
+        it('should return documents', function(done){
+          var docs = this.docs;
+          this.db.all({ include_docs: true }, function(err, body, status, headers, res){
+            var i = 0, len, item, doc;
+            if (!err) {
+              expect(body).to.have.property('total_rows', 9);
+              expect(body).to.have.property('offset', 0);
+              for (len = body.length; i < len; i++) {
+                item = body[i], doc = docs[i];
+                expect(item).to.have.property('id', doc._id);
+                expect(item).to.have.property('key', doc._id);
+                expect(item.value).to.have.property('rev', doc._rev);
+                shouldHaveIdRev(item.doc, doc._id, doc._rev);
+                expect(item.doc).to.have.property('hello', doc.hello);
+              }
+            }
+            done(err);
+          });
+        });
+      });
+
+      describe('#view', function(){
+
+      });
+
+    });
+
+    describe('#update', function(){
+
+    });
+
+    describe('#replicate', function(){
+
+    });
+
+    describe('#commit', function(){
+
+    });
+
+    describe('#purge', function(){
+
+    });
+
+    describe('#compact', function(){
+
+    });
+
+    describe('#vacuum', function(){
+
+    });
+
   });
 
-  function destroyDB(done){
+  function forceDestroyDB(done) {
     this.db.destroy(function(){
       done();
     });
   }
 
-  function putDocument(done){
+  function putDocument(done) {
     var doc = this.doc;
     this.db.put(doc, function(err, body, status, headers, res){
       if (!err) {
@@ -203,15 +337,37 @@ describe('Database', function(){
     });
   }
 
+  function bulkDocuments(done) {
+    var docs = this.docs;
+    this.db.bulk(docs, function(err, body, status, headers, res){
+      var i = 0, j, len, item, doc;
+      if (!err) {
+        for (len = body.length; i < len; i++) {
+          item = body[i], doc = docs[i];
+          expect(item).to.have.property('id', doc._id);
+          expect(item).to.have.property('rev');
+          doc._rev = item.rev;
+        }
+      }
+      done(err);
+    });
+  }
+
   function shouldBeOk(body) {
     expect(body).to.have.property('ok', true);
   }
 
   function shouldHaveIdRev(body, id, rev) {
-    expect(body).to.have.property('id', id);
-    expect(body).to.have.property('_id', id);
-    expect(body).to.have.property('rev', rev);
-    expect(body).to.have.property('_rev', rev);
+    expect(body.id).to.be(id);
+    expect(body._id).to.be(id);
+    expect(body.rev).to.be(rev);
+    expect(body._rev).to.be(rev);
+  }
+
+  function shouldBeDocument(body, doc) {
+    for (var key in doc) {
+      expect(body).to.have.property(key, doc[key]);
+    }
   }
 
 });

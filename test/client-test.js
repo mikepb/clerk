@@ -7,7 +7,7 @@ if (typeof require != 'undefined') {
 
 describe('Client', function(){
 
-  beforeEach(function(){
+  before(function(){
     this.client = new clerk.Client('http://127.0.0.1:5984');
   });
 
@@ -20,7 +20,7 @@ describe('Client', function(){
   });
 
   describe('#databases', function(){
-    it('shoud databases', function(done){
+    it('shoud list databases', function(done){
       this.client.databases(function(err, body, status, headers, res){
         if (!err) {
           expect(body).to.be.an('array');
