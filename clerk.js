@@ -1,7 +1,7 @@
-/*!
-  Clerk (c) 2012 Michael Phan-Ba
-  https://github.com/mikepb/clerk
-  Apache License
+/*
+(c) Michael Phan-Ba
+github.com/mikepb/clerk
+Apache License
 */
 
 ;(function(
