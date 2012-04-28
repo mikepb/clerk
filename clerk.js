@@ -6,7 +6,6 @@
 
 ;(function(
   module,
-  window,
   encodeURI,
   encodeURIComponent,
   decodeURIComponent
@@ -28,10 +27,12 @@
   if (module) module.exports = clerk;
 
   /**
-      Copy properties from sources to target.
-
-      @param {Object} target The target object.
-      @param {Object..} sources The source object.
+   * Copy properties from sources to target.
+   *
+   * @param {Object} target The target object.
+   * @param {Object...} sources The source object.
+   * @return {Object} The target object.
+   * @api private
    */
 
   function extend(target /* sources.. */) {
@@ -43,30 +44,65 @@
     return target;
   }
 
+  /**
+   * Stringify value.
+   *
+   * @param {Object} that That value to stringify.
+   * @return {String} The stringifyed value.
+   * @api private
+   */
+
   function asString(that) {
     return Object.prototype.toString.call(that);
   }
+
+  /**
+   * Check if value is a string.
+   *
+   * @param {Object} that That value to check.
+   * @return {Boolean} `true` if string, `false` otherwise.
+   * @api private
+   */
 
   function isString(that) {
     return asString(that) == '[object String]';
   }
 
+  /**
+   * Check if value is an object.
+   *
+   * @param {Object} that That value to check.
+   * @return {Boolean} `true` if object, `false` otherwise.
+   * @api private
+   */
+
   function isObject(that) {
     return asString(that) == '[object Object]';
   }
+
+  /**
+   * Check if value is a function.
+   *
+   * @param {Object} that That value to check.
+   * @return {Boolean} `true` if function, `false` otherwise.
+   * @api private
+   */
 
   function isFunction(that) {
     return asString(that) == '[object Function]';
   }
 
   /**
-      Create CouchDB client.
-
-      @param {Array|Object|String} servers List of node URIs or map of named
-        nodes to URIs or a single URI.
-      @return {Client|Function} If a list of servers is given, returns a function
-        to select a client, otherwise returns the client.
-  */
+   * Clerk library entry point.
+   *
+   * @param {Array|Object|String} servers List of node URIs or map of named
+   *   nodes to URIs or a single URI.
+   * @return {Client|Function} If a list of servers is given, returns a
+   *   function to select a client, otherwise returns the client.
+   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/)
+   * @see [CouchDB Guide](http://guide.couchdb.org/)
+   * @see [Couchbase 2.0](http://www.couchbase.com/docs/couchbase-single-server-2.0/)
+   */
 
   function clerk(servers) {
     if (!servers || isString(servers)) {
@@ -91,24 +127,29 @@
   }
 
   /**
-      Restore global variable 'clerk' to original value and return the library as an object.
+   * Restore global variable `clerk` to original value.
+   *
+   * @return {clerk} The `clerk` library as an object.
    */
 
-  if (window) clerk.noConflict = function() {
-    window.clerk = previousClerk;
+  clerk.noConflict = function() {
+    global.clerk = previousClerk;
     return clerk;
   };
 
   /**
-      Version.
+   * Library version.
    */
 
   clerk.version = '0.2.0';
 
   /**
-      Create single CouchDB client.
-
-      @param {String} uri Fully qualified URI.
+   * Create single CouchDB client.
+   *
+   * @param {String} uri Fully qualified URI.
+   * @return {Client|Database} If `uri` has a path, the last segment of the
+   *    path is used as the database name and a `Database` instance is
+   *    returned. Otherwise, a `Client` instance is returned.
    */
 
   clerk.createClient = function(uri) {
@@ -123,6 +164,16 @@
     client = new clerk.Client(uri.host, uri);
     return db ? client.database(db) : client;
   };
+
+  /**
+   * Parse URI.
+   *
+   * The URI is normalized by removing extra `//` in the path and extracting
+   * the authentication component, if present.
+   *
+   * @param {String} uri Fully qualified URI.
+   * @return {String} The normalized URI.
+   */
 
   clerk._parseURI = function(uri) {
     var match;
@@ -141,21 +192,27 @@
     return { host: uri || '' };
   };
 
+  /**
+   * Base prototype for `Client` and `Database`.
+   * Encapsulates HTTP methods, JSON handling, and response coersion.
+   */
+
   var Base = clerk.Base = {
 
     /**
-        Service request and parse JSON response.
-
-        @param {String} [method] HTTP method.
-        @param {String} [path] HTTP path.
-        @param {Object} [query] HTTP query options.
-        @param {Object} [body] HTTP body.
-        @param {Object} [headers] HTTP headers.
-        @param {Function} callback Callback function.
-          @param {Error|null} error Error or `null` on success.
-          @param {Object} data Response data.
-          @param {Integer} status Response status code.
-          @param {Object} headers Response headers.
+     * Service request and parse JSON response.
+     *
+     * @param {String} [method="GET"] HTTP method.
+     * @param {String} [path=this.uri] HTTP URI.
+     * @param {Object} [query] HTTP query options.
+     * @param {Object} [body] HTTP body.
+     * @param {Object} [headers] HTTP headers.
+     * @param {Function} [callback] Callback function.
+     *   @param {Error|null} error Error or `null` on success.
+     *   @param {Object} data Response data.
+     *   @param {Integer} status Response status code.
+     *   @param {Object} headers Response headers.
+     * @return This object for chaining.
      */
 
     request: function(/* [method], [path], [query], [data], [headers], [callback] */) {
@@ -165,7 +222,7 @@
         , headers = args[4] || {}
         , path = args[1] ? '/' + args[1] : '';
 
-      headers['Content-Type'] = 'application/json';
+      if (!('Content-Type' in headers)) headers['Content-Type'] = 'application/json';
 
       self._request(
         args[0] || GET,                             // method
@@ -182,9 +239,21 @@
       return self;
     },
 
-    _replacer: function(key, val) {
-      return isFunction(val) ? val.toString() : val;
-    },
+    /**
+     * Service request and parse JSON response. All arguments are required.
+     *
+     * @param {String} method HTTP method.
+     * @param {String} path HTTP URI.
+     * @param {Object} query HTTP query options.
+     * @param {Object} body HTTP body.
+     * @param {Object} headers HTTP headers.
+     * @param {Function} callback Callback function.
+     *   @param {Error|null} error Error or `null` on success.
+     *   @param {Object} data Response data.
+     *   @param {Integer} status Response status code.
+     *   @param {Object} headers Response headers.
+     * @return This object for chaining.
+     */
 
     _request: function(method, uri, query, body, headers, auth, callback) {
       var self = this
@@ -231,6 +300,14 @@
       xhr.send(body);
     },
 
+    /**
+     * Coerce response to normalize access to `id` and `rev`.
+     *
+     * @param {Object} json The response JSON.
+     * @return The coerced JSON.
+     * @api private
+     */
+
     _response: function(json) {
       var data = json.rows || json.results || json.uuids || json.slice && json
         , meta = this._meta
@@ -250,6 +327,28 @@
       return data;
     },
 
+    /**
+     * JSON stringify functions. Used for encoding view documents to JSON.
+     *
+     * @param {String} key The key to stringify.
+     * @param {Object} val The value to stringify.
+     * @return {Object} The stringified function value or the value.
+     * @api private
+     */
+
+    _replacer: function(key, val) {
+      return isFunction(val) ? val.toString() : val;
+    },
+
+    /**
+     * Coerce documents with prototypical `id`, `_id`, `rev`, and `_rev`
+     * values.
+     *
+     * @param {Object} doc The document to coerce.
+     * @return {Object} The coerced document.
+     * @api private
+     */
+
     _meta: function(doc) {
       var hasId = !doc.id ^ !doc._id
         , hasRev = !doc.rev ^ !doc._rev
@@ -265,6 +364,10 @@
       return doc;
     },
 
+    /**
+     * HTTP headers to parse.
+     */
+
     _headers: [
       'cache-control',
       'content-length',
@@ -273,6 +376,10 @@
       'etag',
       'server'
     ],
+
+    /**
+     * Parse HTTP response headers.
+     */
 
     _getHeaders: function(xhr) {
       var headers = {}
@@ -288,14 +395,13 @@
   };
 
   /**
-      CouchDB client.
-
-      @param {String} uri Fully qualified URI.
-      @param {Object} [options] Options.
-        @param {Object} [options.auth] Authentication credentials.
-          @param {String} [options.auth.user] Username.
-          @param {String} [options.auth.pass] Password.
-      @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Complete_HTTP_API_Reference)
+   * Clerk CouchDB client.
+   *
+   * @param {String} uri Fully qualified URI.
+   * @param {Object} [auth] Authentication options.
+   *   @param {String} [auth.user] Username.
+   *   @param {String} [auth.pass] Password.
+   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Complete_HTTP_API_Reference)
    */
 
   var Client = clerk.Client = function(uri, auth) {
@@ -307,10 +413,10 @@
   Client = Client.prototype = {
 
     /**
-      Select database to manipulate.
-
-      @param {String} name Database name.
-      @return {Database} Database object.
+     * Select database to manipulate.
+     *
+     * @param {String} name Database name.
+     * @return {Database} Database object.
      */
 
     database: function(name) {
@@ -319,14 +425,10 @@
     },
 
     /**
-      List all databases.
-
-      @param {Function} callback Callback function.
-        @param {Error|null} callback.error Error or `null` on success.
-        @param {Object} [callback.data] Response data.
-        @param {ClientResponse} [callback.response] ClientResponse object.
-      @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetAllDbs)
-      @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-misc.html#couchbase-api-misc_all-dbs_get)
+     * List all databases.
+     *
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetAllDbs)
      */
 
     databases: function(/* [query], [headers], [callback] */) {
@@ -334,15 +436,11 @@
     },
 
     /**
-      Get UUIDs.
-
-      @param {Integer} [count=1] Number of UUIDs to get.
-      @param {Function} callback Callback function.
-        @param {Error|null} callback.error Error or `null` on success.
-        @param {String[]} [callback.uuids] UUIDs or error data.
-        @param {ClientResponse} [callback.response] ClientResponse object.
-      @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetUuids)
-      @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-misc.html#couchbase-api-misc_uuids_get)
+     * Get UUIDs.
+     *
+     * @param {Integer} [count=1] Number of UUIDs to get.
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetUuids)
      */
 
     uuids: function(count /* [query], [headers], [callback] */) {
@@ -352,14 +450,10 @@
     },
 
     /**
-      Get server information.
-
-      @param {Function} callback Callback function.
-        @param {Error|null} callback.error Error or `null` on success.
-        @param {Object} [callback.data] Response data.
-        @param {ClientResponse} [callback.response] ClientResponse object.
-      @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetRoot)
-      @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-misc.html#couchbase-api-misc_root_get)
+     * Get server information.
+     *
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetRoot)
      */
 
     info: function(/* [query], [headers], [callback] */) {
@@ -367,14 +461,10 @@
     },
 
     /**
-      Get tail of the server log file.
-
-      @param {Function} callback Callback function.
-        @param {Error|null} callback.error Error or `null` on success.
-        @param {Object} [callback.data] Response data.
-        @param {ClientResponse} [callback.response] ClientResponse object.
-      @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetLog)
-      @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-misc.html#couchbase-api-misc_log_get)
+     * Get tail of the server log file.
+     *
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetLog)
      */
 
     stats: function(/* [query], [headers], [callback] */) {
@@ -382,18 +472,14 @@
     },
 
     /**
-      Get tail of the server log file.
-
-      @param {Object} [options] Options.
-        @param {Integer} [options.bytes=1000] Number of bytes to read.
-        @param {Integer} [options.offset=0] Offset in bytes from the end of
-          the log file to start reading.
-      @param {Function} callback Callback function.
-        @param {Error|null} callback.error Error or `null` on success.
-        @param {Object} [callback.data] Response data.
-        @param {ClientResponse} [callback.response] ClientResponse object.
-      @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetLog)
-      @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-misc.html#couchbase-api-misc_log_get)
+     * Get tail of the server log file.
+     *
+     * @param {Object} [query] Query parameters.
+     *   @param {Integer} [query.bytes=1000] Number of bytes to read.
+     *   @param {Integer} [query.offset=0] Number of bytes from the end of
+     *     log file to start reading.
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetLog)
      */
 
     log: function(/* [query], [headers], [callback] */) {
@@ -406,14 +492,10 @@
     },
 
     /**
-      List running tasks.
-
-      @param {Function} callback Callback function.
-        @param {Error|null} callback.error Error or `null` on success.
-        @param {Object} [callback.data] Response data.
-        @param {ClientResponse} [callback.response] ClientResponse object.
-      @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetActiveTasks)
-      @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-misc.html#couchbase-api-misc_active-tasks_get)
+     * List running tasks.
+     *
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetActiveTasks)
      */
 
     tasks: function(/* [query], [headers], [callback] */) {
@@ -421,14 +503,10 @@
     },
 
     /**
-      Get configuration values.
-
-      @param {String} [section] Configuration section or key.
-      @param {Function} callback Callback function.
-        @param {Error|null} callback.error Error or `null` on success.
-        @param {Object} [callback.data] Configuration data.
-        @param {ClientResponse} [callback.response] ClientResponse object.
-      @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-config.html)
+     * Get configuration values.
+     *
+     * @param {String} [key] Configuration section or key.
+     * @return This object for chaining.
      */
 
     config: function(/* [key], [query], [callback] */) {
@@ -439,16 +517,11 @@
     },
 
     /**
-      Set configuration value.
-
-      @param {String} section Configuration section.
-      @param {String} key Configuration key.
-      @param {String} value Configuration value.
-      @param {Function} callback Callback function.
-        @param {Error|null} callback.error Error or `null` on success.
-        @param {Object} [callback.value] Previous configuration value.
-        @param {ClientResponse} [callback.response] ClientResponse object.
-      @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-config.html#couchbase-api-config_config-section-key_put)
+     * Set configuration value.
+     *
+     * @param {String} key Configuration section and key.
+     * @param {String} value Configuration value.
+     * @return This object for chaining.
      */
 
     setConfig: function(key, value /* [query], [headers], [callback] */) {
@@ -458,15 +531,10 @@
     },
 
     /**
-      Delete configuration value.
-
-      @param {String} section Configuration section.
-      @param {String} key Configuration key.
-      @param {Function} callback Callback function.
-        @param {Error|null} callback.error Error or `null` on success.
-        @param {Object} [callback.value] Previous configuration value.
-        @param {ClientResponse} [callback.response] ClientResponse object.
-      @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-config.html#couchbase-api-config_config-section-key_put)
+     * Delete configuration value.
+     *
+     * @param {String} key Configuration section and key.
+     * @return This object for chaining.
      */
 
     delConfig: function(key /* [query], [headers], [callback] */) {
@@ -476,27 +544,23 @@
     },
 
     /**
-      Replicate databases.
-
-      @param {Object} options Options.
-        @param {String} options.source Source database URL or local name.
-        @param {String} options.target Target database URL or local name.
-        @param {Boolean} [options.cancel] Set to `true` to cancel replication.
-        @param {Boolean} [options.continuous] Set to `true` for continuous
-          replication.
-        @param {Boolean} [options.create_target] Set to `true` to create the
-          target database.
-        @param {String} [options.filter] Filter name for filtered replication.
-          Example: "mydesign/myfilter".
-        @param {Object} [options.query] Query parameters for filter.
-        @param {String[]} [options.doc_ids] Document IDs to replicate.
-        @param {String} [options.proxy] Proxy through which to replicate.
-      @param {Function} [callback] Callback function.
-        @param {Error|null} callback.error Error or `null` on success.
-        @param {Object} [callback.data] Response data.
-        @param {ClientResponse} [callback.response] ClientResponse object.
-      @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Replication)
-      @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-misc.html#couchbase-api-misc_replicate_post)
+     * Replicate databases.
+     *
+     * @param {Object} options Options.
+     *   @param {String} options.source Source database URL or local name.
+     *   @param {String} options.target Target database URL or local name.
+     *   @param {Boolean} [options.cancel] Set to `true` to cancel replication.
+     *   @param {Boolean} [options.continuous] Set to `true` for continuous
+     *     replication.
+     *   @param {Boolean} [options.create_target] Set to `true` to create the
+     *     target database.
+     *   @param {String} [options.filter] Filter name for filtered replication.
+     *     Example: "mydesign/myfilter".
+     *   @param {Object} [options.query] Query parameters for filter.
+     *   @param {String[]} [options.doc_ids] Document IDs to replicate.
+     *   @param {String} [options.proxy] Proxy through which to replicate.
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Replication)
      */
 
     replicate: function(options /* [query], [headers], [callback] */) {
@@ -504,18 +568,20 @@
     },
 
     /**
-      Restart server.
-
-      @param {Function} callback Callback function.
-        @param {Error|null} callback.error Error or `null` on success.
-        @param {Object} [callback.data] Response data.
-        @param {ClientResponse} [callback.response] ClientResponse object.
-      @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-misc.html#couchbase-api-misc_restart_post)
+     * Restart server.
+     *
+     * @return This object for chaining.
      */
 
     restart: function(/* [path], [query], [headers], [callback] */) {
       return this._(arguments)(POST, '_restart');
     },
+
+    /**
+     * Parse arguments.
+     *
+     * @api private
+     */
 
     _: function(args, start) {
       var self = this;
@@ -549,10 +615,14 @@
   };
 
   /**
-      Methods for CouchDB database.
-
-      @param {Client} options Clerk client.
-      @param {String} options Database name.
+   * Methods for CouchDB database.
+   *
+   * @param {Client} client Clerk client.
+   * @param {String} name Database name.
+   * @param {Object} [auth] Authentication options.
+   *   @param {String} [auth.user] Username.
+   *   @param {String} [auth.pass] Password.
+   * @return This object for chaining.
    */
 
   var Database = clerk.Database = function(client, name, auth) {
@@ -565,13 +635,9 @@
   Database = Database.prototype = {
 
     /**
-        Create database.
-
-        @param {Function} callback Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object} [callback.data] Response data.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db_put)
+     * Create database.
+     *
+     * @return This object for chaining.
      */
 
     create: function(/* [query], [headers], [callback] */) {
@@ -579,13 +645,9 @@
     },
 
     /**
-        Destroy database.
-
-        @param {Function} callback Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object} [callback.data] Response data.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db_delete)
+     * Destroy database.
+     *
+     * @return This object for chaining.
      */
 
     destroy: function(/* [query], [headers], [callback] */) {
@@ -593,27 +655,20 @@
     },
 
     /**
-        Check if database exists.
-
-        @param {Function} callback Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object} [callback.data] Response data.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db_get)
-    */
+     * Check if database exists.
+     *
+     * @return This object for chaining.
+     */
 
     info: function(/* [query], [headers], callback */) {
       return this._(arguments)(GET);
     },
 
     /**
-        Check if database exists.
-
-        @param {Function} callback Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Boolean} [callback.result] `true` if existing, `false`
-            otherwise.
-    */
+     * Check if database exists.
+     *
+     * @return This object for chaining.
+     */
 
     exists: function(/* [query], [headers], callback */) {
       var request = this._(arguments), callback = request.f;
@@ -626,41 +681,41 @@
     },
 
     /**
-        Fetch document.
-
-        @param {String} id Document ID.
-        @param {String} [rev] Document revision.
-        @param {Object} [options] Options.
-          @param {Boolean} [options.revs] Fetch list of revisions.
-          @param {Boolean} [options.revs_info] Fetch detailed revision information.
-        @param {Function} callback Callback function.
-          @param {Error|null} error Error or `null` on success.
-          @param {Object} data Response data.
-          @param {Integer} status Response status code.
-        @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#GET)
-        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-dbdoc.html#couchbase-api-dbdoc_db-doc_get)
-    */
+     * Fetch document.
+     *
+     * @param {String} id Document ID.
+     * @param {String} [rev] Document revision.
+     * @param {Object} [query] HTTP query options.
+     *   @param {Boolean} [query.revs] Fetch list of revisions.
+     *   @param {Boolean} [query.revs_info] Fetch detailed revision information.
+     * @param {Function} callback Callback function.
+     *   @param {Error|null} error Error or `null` on success.
+     *   @param {Object} data Response data.
+     *   @param {Integer} status Response status code.
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#GET)
+     */
 
     get: function(/* id, [rev], [query], [headers], [callback] */) {
       return this._(arguments)(GET);
     },
 
     /**
-        Get document metadata.
-
-        @param {String|String[]} id Document ID or array of documents IDs.
-        @param {Object} [options] Query options.
-        @param {Function} callback Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object|Object[]} [callback.results] Document metadata or array
-            of document metadata.
-            @param result.id Document ID.
-            @param result.rev Document revision.
-            @param [result.contentType] MIME content type. Only available when
-              getting metadata for single document.
-            @param [result.contentLength] Content length. Only available when
-              getting metadata for single document.
-          @param {ClientResponse} [callback.response] ClientResponse object.
+     * Get document metadata.
+     *
+     * @param {String} id Document ID.
+     * @param {Object} [query] HTTP query options.
+     * @param {Function} callback Callback function.
+     *   @param {Error|null} callback.error Error or `null` on success.
+     *   @param {Object|Object[]} [callback.body] Document metadata or array
+     *     of document metadata.
+     *     @param result.id Document ID.
+     *     @param result.rev Document revision.
+     *     @param [result.contentType] MIME content type. Only available when
+     *       getting metadata for single document.
+     *     @param [result.contentLength] Content length. Only available when
+     *       getting metadata for single document.
+     * @return This object for chaining.
      */
 
     head: function(/* [id], [query], [headers], callback */) {
@@ -681,57 +736,46 @@
     },
 
     /**
-        Post document to database.
+     * Post document to database.
+     *
+     * If documents have no ID, a document ID will be automatically generated
+     * on the server. If attachments are given, they will be automatically
+     * Base64 encoded. Streamed attachments are not supported. Attachments are
+     * only supported on Node.js.
+     *
+     * @param {Object} doc Document.
+     *   @param {String} [doc._id] Document ID. If set, uses given document ID.
+     *   @param {String} [doc._rev] Document revision. If set, allows update to
+     *     existing document.
+     *   @param {Object} [doc._attachments] Attachments. If given, must be a
+     *     map of filenames to attachment properties.
+     *     @param {String} [doc._attachments[filename]] Attachment filename, as
+     *       hash key.
+     *     @param {String} [doc._attachments[filename].contentType] Attachment
+     *       MIME content type.
+     *     @param {String|Object} [doc._attachments[filename].data] Attachment
+     *       data. Will be Base64 encoded.
+     * @param {Object} [options] Options.
+     *   @param {Boolean} [options.batch] Allow server to write document in
+     *     batch mode. Documents will not be written to disk immediately,
+     *     increasing the chances of write failure.
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#POST)
+     */
 
-        If documents have no ID, a document ID will be automatically generated
-        on the server. If attachments are given, they will be automatically
-        Base64 encoded. Streamed attachments are not supported. Attachments are
-        only supported for single documents.
-
-        Bulk posting of documents will use all-or-nothing semantics. See
-        `bulk()` for options.
-
-        @param {Object|Object[]} doc Document or array of documents.
-          @param {String} [doc._id] Document ID. If set, uses given document ID.
-          @param {String} [doc._rev] Document revision. If set, allows update to
-            existing document.
-          @param {String} [doc._attachments] Attachments. If given, must be a
-            map of filenames to attachment properties. Only supported for single
-            documents.
-            @param {String} [doc._attachments[filename]] Attachment filename, as
-              hash key.
-            @param {String} [doc._attachments[filename].contentType] Attachment
-              MIME content type.
-            @param {String|Object} [doc._attachments[filename].data] Attachment
-              data. Will be Base64 encoded.
-        @param {Object} [options] Options.
-          @param {Boolean} [options.batch] Allow server to write document in
-            batch mode. Documents will not be written to disk immediately,
-            increasing the chances of write failure.
-        @param {Function} [callback] Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object[]} [callback.results] Results.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-        @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#POST)
-        @see [Couchbase Api](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-dbdoc.html#couchbase-api-dbdoc_db_post)
-    */
-
-    post: function(doc /* [query], [headers], callback */) {
+    post: function(doc /* [query], [headers], [callback] */) {
       return this._(arguments, 1)(POST, 0, { b: doc });
     },
 
     /**
-        Put document in database.
-
-        @param {String} [id] Document ID. If provided, also requires rev.
-        @param {String} [rev] Document revision. If provided, also requires id.
-        @param {Object} doc Document data.
-        @param {String} [options] Options.
-        @param {Function} callback Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object[]} [callback.results] Results.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-    */
+     * Put document in database.
+     *
+     * @param {String} [id] Document ID. If provided, also requires rev.
+     * @param {String} [rev] Document revision. If provided, also requires id.
+     * @param {Object} doc Document data. Requires `_id` property.
+     * @param {String} [options] Options.
+     * @return This object for chaining.
+     */
 
     put: function(/* [id], [rev], [doc], [query], [headers], [callback] */) {
       var request = this._(arguments, 0, 1);
@@ -750,15 +794,12 @@
     },
 
     /**
-        Delete document.
-
-        @param {String} id Document ID.
-        @param {String} rev Document revision.
-        @param {Object} [options] Options.
-        @param {Function} [callback] Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object[]} [callback.results] Results.
-          @param {ClientResponse} [callback.response] ClientResponse object.
+     * Delete document.
+     *
+     * @param {String} id Document ID.
+     * @param {String} rev Document revision.
+     * @param {Object} [query] HTTP query options.
+     * @return This object for chaining.
      */
 
     del: function(/* id, rev, [query], [headers], [callback] */) {
@@ -769,27 +810,24 @@
     },
 
     /**
-        Copy document.
-
-        @param {Object} source Source document.
-          @param {String} source.id Source document ID.
-          @param {String} [source.rev] Source document revision.
-          @param {String} [source._id] Source document ID. Alternate key for
-            `source.id`.
-          @param {String} [source._rev] Source document revision. Alternate key
-            for `source.id`.
-        @param {Object} target Target document.
-          @param {String} target.id Target document ID.
-          @param {String} [target.rev] Target document revision.
-          @param {String} [target._id] Target document ID. Alternate key for
-            `target.id`.
-          @param {String} [target._rev] Target document revision. Alternate key
-            for `target.id`.
-        @param {Object} [options] Query options.
-        @param {Function} callback Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object[]} [callback.results] Results.
-          @param {ClientResponse} [callback.response] ClientResponse object.
+     * Copy document.
+     *
+     * @param {Object} source Source document.
+     *   @param {String} source.id Source document ID.
+     *   @param {String} [source.rev] Source document revision.
+     *   @param {String} [source._id] Source document ID. Alternate key for
+     *     `source.id`.
+     *   @param {String} [source._rev] Source document revision. Alternate key
+     *     for `source.id`.
+     * @param {Object} target Target document.
+     *   @param {String} target.id Target document ID.
+     *   @param {String} [target.rev] Target document revision.
+     *   @param {String} [target._id] Target document ID. Alternate key for
+     *     `target.id`.
+     *   @param {String} [target._rev] Target document revision. Alternate key
+     *     for `target.id`.
+     * @param {Object} [query] HTTP query options.
+     * @return This object for chaining.
      */
 
     copy: function(source, target /* [query], [headers], [callback] */) {
@@ -807,30 +845,26 @@
     },
 
     /**
-        Query all documents by ID.
-
-        @param {Object} [options] Options.
-          @param {JSON} [options.startkey] Start returning results from this
-            document ID.
-          @param {JSON} [options.endkey] Stop returning results at this document
-            ID.
-          @param {Integer} [options.limit] Limit number of results returned.
-          @param {Boolean} [options.descending=false] Lookup results in reverse
-            order by key, returning documents in descending order by key.
-          @param {Integer} [options.skip] Skip this many records before
-            returning results.
-          @param {Boolean} [options.include_docs=false] Include document source for
-            each result.
-          @param {Boolean} [options.include_end=true] Include `options.endkey`
-            in results.
-          @param {Boolean} [options.update_seq=false] Include sequence value
-            of the database corresponding to the view.
-        @param {Function} callback Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object[]} [callback.results] Results.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-        @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
-        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-all-docs_get)
+     * Query all documents by ID.
+     *
+     * @param {Object} [query] HTTP query options.
+     *   @param {JSON} [query.startkey] Start returning results from this
+     *     document ID.
+     *   @param {JSON} [query.endkey] Stop returning results at this document
+     *     ID.
+     *   @param {Integer} [query.limit] Limit number of results returned.
+     *   @param {Boolean} [query.descending=false] Lookup results in reverse
+     *     order by key, returning documents in descending order by key.
+     *   @param {Integer} [query.skip] Skip this many records before
+     *     returning results.
+     *   @param {Boolean} [query.include_docs=false] Include document source for
+     *     each result.
+     *   @param {Boolean} [query.include_end=true] Include `query.endkey`
+     *     in results.
+     *   @param {Boolean} [query.update_seq=false] Include sequence value
+     *     of the database corresponding to the view.
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
      */
 
     all: function(/* [query], [headers], [callback] */) {
@@ -840,42 +874,38 @@
     },
 
     /**
-        Query a view.
-
-        @param {String|Object} view View name (e.g. mydesign/myview) or
-          temporary view definition. Using a temporary view is strongly not
-          recommended for production use.
-        @param {Object} [options] Options.
-          @param {JSON} [options.key] Key to lookup.
-          @param {JSON} [options.startkey] Start returning results from this key.
-          @param {String} [options.startkey_docid] Start returning results
-            from this document ID. Allows pagination with duplicate keys.
-          @param {JSON} [options.endkey] Stop returning results at this key.
-          @param {String} [options.endkey_docid] Stop returning results at
-            this document ID. Allows pagination with duplicate keys.
-          @param {Integer} [options.limit] Limit number of results returned.
-          @param {Boolean|String} [options.stale] Do not refresh view even if
-            stale. For CouchDB versions `1.1.0` and up, set to `update_after` to
-            update view after results are returned.
-          @param {Boolean} [options.descending=false] Lookup results in reverse
-            order by key, returning documents in descending order by key.
-          @param {Integer} [options.skip] Skip this many records before
-            returning results.
-          @param {Boolean|Integer} [options.group=false] Use the reduce function
-            to group results by key. Set to an integer specify `group_level`.
-          @param {Boolean|Integer} [options.reduce=true] Use the reduce function.
-          @param {Boolean} [options.fetch=false] Include document source for
-            each result.
-          @param {Boolean} [options.include_end=true] Include `options.endkey`
-            in results.
-          @param {Boolean} [options.update_seq=false] Include sequence value
-            of the database corresponding to the view.
-        @param {Function} callback Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object} [callback.data] Response data.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-        @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_view_API)
-        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-temp-view_post)
+     * Query a view.
+     *
+     * @param {String|Object} view View name (e.g. mydesign/myview) or
+     *   temporary view definition. Using a temporary view is strongly not
+     *   recommended for production use.
+     * @param {Object} [query] HTTP query options.
+     *   @param {JSON} [query.key] Key to lookup.
+     *   @param {JSON} [query.startkey] Start returning results from this key.
+     *   @param {String} [query.startkey_docid] Start returning results
+     *     from this document ID. Allows pagination with duplicate keys.
+     *   @param {JSON} [query.endkey] Stop returning results at this key.
+     *   @param {String} [query.endkey_docid] Stop returning results at
+     *     this document ID. Allows pagination with duplicate keys.
+     *   @param {Integer} [query.limit] Limit number of results returned.
+     *   @param {Boolean|String} [query.stale] Do not refresh view even if
+     *     stale. For CouchDB versions `1.1.0` and up, set to `update_after` to
+     *     update view after results are returned.
+     *   @param {Boolean} [query.descending=false] Lookup results in reverse
+     *     order by key, returning documents in descending order by key.
+     *   @param {Integer} [query.skip] Skip this many records before
+     *     returning results.
+     *   @param {Boolean|Integer} [query.group=false] Use the reduce function
+     *     to group results by key. Set to an integer specify `group_level`.
+     *   @param {Boolean|Integer} [query.reduce=true] Use the reduce function.
+     *   @param {Boolean} [query.fetch=false] Include document source for
+     *     each result.
+     *   @param {Boolean} [query.include_end=true] Include `query.endkey`
+     *     in results.
+     *   @param {Boolean} [query.update_seq=false] Include sequence value
+     *     of the database corresponding to the view.
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_view_API)
      */
 
     view: function(view /* [query], [headers], [callback] */) {
@@ -894,36 +924,33 @@
     },
 
     /**
-        Subscribe to database changes.
-
-        The `feed` option determines how the callback is called:
-
-          - `normal` calls the callback once.
-          - `continuous` calls the callback each time an update is received.
-          - `longpoll` waits for a response, then calls the callback once.
-
-        @param {Object} [options]
-          @param {String} [options.feed="normal"] Type of feed. See comments
-            above.
-          @param {String} [options.filter] Filter updates using this filter.
-          @param {Integer} [options.limit] Maximum number of rows to return.
-          @param {Integer} [options.since=0] Start results from this sequence
-            number.
-          @param {Boolean} [options.include_docs=false] Include documents with
-            results.
-          @param {Integer} [options.timeout=1000] Maximum period in milliseconds
-            to wait for a change before sending a response, even if there are no
-            results.
-          @param {Integer} [options.heartbeat=1000] Period in milliseconds after
-            which an empty line is sent. Applicable only to feed types
-            `longpoll` and `continuous`. Overrides `options.timeout` to keep the
-            feed alive indefinitely.
-        @param {Function} callback Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object} [callback.data] Response data.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-        @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_database_API#Changes)
-        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-changes_get)
+     * Get database changes.
+     *
+     * The `feed` option determines how the callback is called:
+     *
+     *   - `normal` calls the callback once.
+     *   - `longpoll` waits for a response, then calls the callback once.
+     *   - `continuous` calls the callback each time an update is received.
+     *     Implemented as the `database#follow()` method.
+     *
+     * @param {Object} [query] HTTP query options.
+     *   @param {String} [query.feed="normal"] Type of feed. See comments
+     *     above.
+     *   @param {String} [query.filter] Filter updates using this filter.
+     *   @param {Integer} [query.limit] Maximum number of rows to return.
+     *   @param {Integer} [query.since=0] Start results from this sequence
+     *     number.
+     *   @param {Boolean} [query.include_docs=false] Include documents with
+     *     results.
+     *   @param {Integer} [query.timeout=1000] Maximum period in milliseconds
+     *     to wait for a change before sending a response, even if there are no
+     *     results.
+     *   @param {Integer} [query.heartbeat=1000] Period in milliseconds after
+     *     which an empty line is sent. Applicable only to feed types
+     *     `longpoll` and `continuous`. Overrides `query.timeout` to keep the
+     *     feed alive indefinitely.
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_database_API#Changes)
      */
 
     changes: function(/* [query], [headers], [callback] */) {
@@ -931,6 +958,11 @@
       if (request.q.feed != 'longpoll') delete request.q.feed;
       return this._changes(request);
     },
+
+    /**
+     * Get database changes.
+     * @see `#changes()`.
+     */
 
     follow: function(/* [query], [headers], callback */) {
       var self = this
@@ -950,27 +982,28 @@
       return self._changes(request);
     },
 
+    /**
+     * Service a changes request.
+     *
+     * @api private
+     */
+
     _changes: function(request) {
       return request(GET, '_changes');
     },
 
     /**
-        Insert or update documents in bulk.
-
-        @param {Object[]} docs Array of documents to insert or update.
-          @param {String} [doc._id] Document ID.
-          @param {String} [doc._rev] Document revision.
-          @param {Boolean} [doc._deleted] Flag indicating whether this document
-            should be deleted.
-        @param {Object} [options] Options.
-          @param {Boolean} [options.all_or_nothing] Use all-or-nothing semantics.
-        @param {Function} [callback] Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object[]} [callback.results] Array with results of each
-            document in the bulk operation.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-        @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
-        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-bulk-docs_post)
+     * Insert or update documents in bulk.
+     *
+     * @param {Object[]} docs Array of documents to insert or update.
+     *   @param {String} [doc._id] Document ID.
+     *   @param {String} [doc._rev] Document revision.
+     *   @param {Boolean} [doc._deleted] Flag indicating whether this document
+     *     should be deleted.
+     * @param {Object} [query] HTTP query options.
+     *   @param {Boolean} [query.all_or_nothing] Use all-or-nothing semantics.
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
      */
 
     bulk: function(docs /* [query], [headers], [callback] */) {
@@ -979,23 +1012,18 @@
     },
 
     /**
-        Delete documents in bulk.
-
-        @param {Object[]} docs Array of documents to insert or update.
-          @param {String} doc._id Document ID.
-          @param {String} doc._rev Document revision.
-        @param {Object} [options] Options.
-          @param {Boolean} [options.all_or_nothing] Use all-or-nothing semantics.
-        @param {Function} [callback] Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object[]} [callback.results] Array with results of each
-            document in the bulk operation.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-        @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
-        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-bulk-docs_post)
+     * Delete documents in bulk.
+     *
+     * @param {Object[]} docs Array of documents to insert or update.
+     *   @param {String} doc._id Document ID.
+     *   @param {String} doc._rev Document revision.
+     * @param {Object} [query] HTTP query options.
+     *   @param {Boolean} [query.all_or_nothing] Use all-or-nothing semantics.
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
      */
 
-    delAll: function(docs) {
+    dels: function(docs) {
       var i = 0, len = docs.length, doc;
       for (; i < len; i++) {
         doc = docs[i], docs[i] = {
@@ -1008,23 +1036,15 @@
     },
 
     /**
-        Update document using server-side handler.
-
-        If the update handler does not return JSON data, do not use a callback.
-        Instead, use the returned `ClientRequest` to directly manipulate the
-        request.
-
-        @param {String} handler Update handler. Example: mydesign/myhandler
-        @param {String} [id] Document ID.
-        @param {Object} [query] Query parameters.
-        @param {Object|String} [data] Data.
-        @param {Object} [headers] Headers.
-        @param {Function} [callback] Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object} [callback.data] Response data.
-          @param {ClientResponse} [callback.response] Response object.
-        @return {ClientRequest} Client request.
-        @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Document_Update_Handlers)
+     * Update document using server-side handler.
+     *
+     * @param {String} handler Update handler. Example: mydesign/myhandler
+     * @param {String} [id] Document ID.
+     * @param {Object} [query] HTTP query options.
+     * @param {Object|String} [data] Data.
+     * @param {Object} [headers] Headers.
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Document_Update_Handlers)
      */
 
     update: function(handler /* [id], [query], [data], [headers], [callback] */) {
@@ -1041,21 +1061,19 @@
     },
 
     /**
-        Replicate database.
-
-        This convenience function sets `options.source` and `options.target` to
-        the selected database name. Either `options.source` or `options.target`
-        must be overridden for a successful replication request.
-
-        @param {Options} options Options. Accepts all options from
-          `Client.replicate()`.
-          @param {String} [options.source=this.name] Source database URL or
-            local name. Defaults to the selected database name if not given.
-          @param {String} [options.target=this.name] Target database URL or
-            local name. Defaults to the selected database name if not given.
-        @param {Function} callback Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object} [callback.result] Response result.
+     * Replicate database.
+     *
+     * This convenience function sets `options.source` and `options.target` to
+     * the selected database name. Either `options.source` or `options.target`
+     * must be overridden for a successful replication request.
+     *
+     * @param {Options} options Options. Accepts all options from
+     *   `Client.replicate()`.
+     *   @param {String} [options.source=this.name] Source database URL or
+     *     local name. Defaults to the selected database name if not given.
+     *   @param {String} [options.target=this.name] Target database URL or
+     *     local name. Defaults to the selected database name if not given.
+     * @return This object for chaining.
      */
 
     replicate: function(options) {
@@ -1066,13 +1084,9 @@
     },
 
     /**
-        Ensure recent changes are committed to disk.
-
-        @param {Function} [callback] Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object} [callback.data] Response data.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-ensure-full-commit_post)
+     * Ensure recent changes are committed to disk.
+     *
+     * @return This object for chaining.
     */
 
     commit: function(/* [query], [headers], [callback] */) {
@@ -1080,14 +1094,10 @@
     },
 
     /**
-        Purge deleted documents from database.
-
-        @param {Object} revs Map of document IDs to revisions to be purged.
-        @param {Function} callback Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object} [callback.data] Response data.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-purge_post)
+     * Purge deleted documents from database.
+     *
+     * @param {Object} revs Map of document IDs to revisions to be purged.
+     * @return This object for chaining.
      */
 
     purge: function(revs /* [query], [headers], [callback] */) {
@@ -1095,16 +1105,11 @@
     },
 
     /**
-        Compact database or design.
-
-        @param {String} [design] Design name if compacting design indexes.
-        @param {Function} [callback] Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object} [callback.data] Response data.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-        @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Compaction)
-        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-compact_post)
-        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-compact-design-doc_post)
+     * Compact database or design.
+     *
+     * @param {String} [design] Design name if compacting design indexes.
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Compaction)
      */
 
     compact: function(/* [design], [query], [headers], [callback] */) {
@@ -1115,19 +1120,26 @@
     },
 
     /**
-        Remove unused views.
-
-        @param {Function} [callback] Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object} [callback.data] Response data.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-        @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Compaction)
-        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-view-cleanup_post)
+     * Remove unused views.
+     *
+     * @return This object for chaining.
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Compaction)
      */
 
     vacuum: function(/* [query], [headers], [callback] */) {
       return this._(arguments)(POST, '_view_cleanup');
     },
+
+    /**
+     * Parse arguments.
+     *
+     * @param {Array} args The arguments.
+     * @param {Integer} start The index from which to start reading arguments.
+     * @param {Boolean} withDoc Set to `true` if the doc source is given as a
+     *   parameter before HTTP query options.
+     * @return This object for chaining.
+     * @api private
+     */
 
     _: function(args, start, withDoc) {
       function request(method, path, options) {
@@ -1162,6 +1174,15 @@
       return request;
     },
 
+    /**
+     * Parse view options.
+     *
+     * @param {Object} query The HTTP query options.
+     * @param {Object} body The body payload.
+     * @return {Object} The body payload.
+     * @api private
+     */
+
     _viewOptions: function(q, body) {
       if (q) {
         if (q.key) q.key = JSON.stringify(q.key);
@@ -1183,7 +1204,6 @@
 
 })(
   typeof module != 'undefined' && module,
-  typeof window != 'undefined' && window,
   encodeURI,
   encodeURIComponent,
   decodeURIComponent
