@@ -500,7 +500,7 @@
      */
 
     replicate: function(options /* [query], [headers], [callback] */) {
-      return this._(arguments)(POST, '_replicate', { b: options });
+      return this._(arguments, 1)(POST, '_replicate', { b: options });
     },
 
     /**
@@ -1058,10 +1058,11 @@
           @param {Object} [callback.result] Response result.
      */
 
-    replicate: function(options, query, callback) {
-      if (!options.source) options.source = this.name;
-      if (!options.target) options.target = this.name;
-      return this.client.replicate(options, query, callback);
+    replicate: function(options) {
+      var self = this, name = self.name, client = self.client;
+      if (!options.source) options.source = name;
+      if (!options.target) options.target = name;
+      return client.replicate.apply(client, arguments);
     },
 
     /**

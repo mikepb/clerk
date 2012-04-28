@@ -359,6 +359,29 @@ describe('Database', function(){
 
     describe('#replicate', function(){
 
+      beforeEach(function(){
+        this.replica = this.client.database('clerk-replicate-test');
+      });
+
+      beforeEach(function(done){
+        this.replica.create(done);
+      });
+
+      afterEach(function(done){
+        this.replica.destroy(done);
+      });
+
+      it('shoud be ok', function(done){
+        var options = { target: this.replica.name };
+        this.db.replicate(options, function(err, body, status, headers, res){
+          if (!err) {
+            shouldBeOk(body);
+            shouldHave2xxStatus(status);
+          }
+          done(err);
+        });
+      });
+
     });
 
     describe('#commit', function(){
