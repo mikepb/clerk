@@ -1,6 +1,6 @@
 {
   "name": "clerk",
-  "description": "CouchDB library for Node.js",
+  "description": "CouchDB library for Node and the browser",
   "version": "0.2.0",
   "author": "Michael Phan-Ba <michael@mikepb.com>",
   "homepage": "https://github.com/mikepb/clerk",
@@ -10,19 +10,18 @@
   },
   "main": "./lib",
   "engines": {
-    "node": "~0.6.10"
+    "node": "~0.6.15"
   },
   "dependencies": {
     "follow": "~0.7.1",
     "request": "~2.9.202"
   },
   "devDependencies": {
-    "async": "~0.1.18",
     "expect.js": "~0.1.2",
     "mocha": "~1.0.0",
     "expect.js": "~0.1.2"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "make test"
   }
 }
