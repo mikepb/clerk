@@ -24,6 +24,7 @@ describe('Client', function(){
       this.client.databases(function(err, body, status, headers, res){
         if (!err) {
           expect(body).to.be.an('array');
+          shouldHave2xxStatus(status);
         }
         done(err);
       });
@@ -48,6 +49,7 @@ describe('Client', function(){
           expect(body).to.have.length(n);
           expect(body).to.have.property('uuids');
           expect(body).to.be(body.uuids);
+          shouldHave2xxStatus(status);
         }
         done(err);
       };
@@ -67,6 +69,7 @@ describe('Client', function(){
         if (!err) {
           expect(body).to.have.property('couchdb', 'Welcome');
           expect(body).to.have.property('version');
+          shouldHave2xxStatus(status);
         }
         done(err);
       });
@@ -81,6 +84,7 @@ describe('Client', function(){
           expect(body).to.have.property('httpd');
           expect(body).to.have.property('httpd_request_methods');
           expect(body).to.have.property('httpd_status_codes');
+          shouldHave2xxStatus(status);
         }
         done(err);
       });
@@ -92,6 +96,7 @@ describe('Client', function(){
       this.client.log(function(err, body, status, headers, res){
         if (!err) {
           expect(body).to.be.ok();
+          shouldHave2xxStatus(status);
         }
         done(err);
       });
@@ -103,6 +108,7 @@ describe('Client', function(){
       this.client.tasks(function(err, body, status, headers, res){
         if (!err) {
           expect(body).to.be.an('array');
+          shouldHave2xxStatus(status);
         }
         done(err);
       });

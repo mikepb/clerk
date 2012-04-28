@@ -617,7 +617,7 @@
       var request = this._(arguments), callback = request.f;
 
       request.f = function(err, body, status, headers, xhr) {
-        callback(err, status === 200, headers, headers, xhr);
+        callback(err, status === 200, status, headers, xhr);
       };
 
       return request(HEAD);

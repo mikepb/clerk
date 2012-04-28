@@ -73,6 +73,7 @@ describe('Database', function(){
             expect(body).to.have.property('db_name', 'clerk-test');
             expect(body).to.have.property('doc_count', 0);
             expect(body).to.have.property('doc_del_count', 0);
+            shouldHave2xxStatus(status);
           }
           done(err);
         });
@@ -86,6 +87,7 @@ describe('Database', function(){
           this.db.exists(function(err, body, status, headers, res){
             if (!err) {
               expect(body).to.be(true);
+              shouldHave2xxStatus(status);
             }
             done(err);
           });
@@ -98,6 +100,7 @@ describe('Database', function(){
             if (!err) {
               shouldBeOk(body);
               shouldHaveIdRev(body, body._id, body._rev);
+              shouldHave2xxStatus(status);
             }
             done(err);
           });
@@ -112,6 +115,7 @@ describe('Database', function(){
             if (!err) {
               shouldBeOk(body);
               shouldHaveIdRev(body, doc._id, '1-15f65339921e497348be384867bb940f');
+              shouldHave2xxStatus(status);
             }
             done(err);
           });
@@ -124,6 +128,7 @@ describe('Database', function(){
             if (!err) {
               shouldBeOk(body);
               shouldHaveIdRev(body, id, '1-15f65339921e497348be384867bb940f');
+              shouldHave2xxStatus(status);
             }
             done(err);
           });
@@ -144,6 +149,7 @@ describe('Database', function(){
             if (!err) {
               shouldHaveIdRev(body, doc._id, doc._rev);
               shouldBeDocument(body, doc);
+              shouldHave2xxStatus(status);
             }
             done(err);
           });
@@ -156,6 +162,7 @@ describe('Database', function(){
           this.db.head(this.doc._id, function(err, body, status, headers, res){
             if (!err) {
               shouldHaveIdRev(body, doc._id, doc._rev);
+              shouldHave2xxStatus(status);
             }
             done(err);
           });
@@ -174,6 +181,7 @@ describe('Database', function(){
           this.db.post(doc, function(err, body, status, headers, res){
             if (!err) {
               shouldHaveIdRev(body, doc._id, '2-47661acbb62a2a63704c803bc0152f2b');
+              shouldHave2xxStatus(status);
             }
             done(err);
           });
@@ -186,6 +194,7 @@ describe('Database', function(){
           this.db.del(doc._id, doc._rev, function(err, body, status, headers, res){
             if (!err) {
               shouldBeOk(body);
+              shouldHave2xxStatus(status);
             }
             done(err);
           });
@@ -216,6 +225,7 @@ describe('Database', function(){
           this.db.copy(source, target, function(err, body, status, headers, res){
             if (!err) {
               shouldHaveIdRev(body, id, rev);
+              shouldHave2xxStatus(status);
             }
             done(err);
           });
@@ -233,6 +243,7 @@ describe('Database', function(){
             if (!err) {
               expect(body).to.be.an('array');
               expect(body).to.have.length(9);
+              shouldHave2xxStatus(status);
             }
             done(err);
           });
@@ -253,6 +264,7 @@ describe('Database', function(){
                 shouldBeOk(item);
                 shouldHaveIdRev(item, doc._id, item._rev);
               }
+              shouldHave2xxStatus(status);
             }
             done(err);
           });
@@ -282,6 +294,7 @@ describe('Database', function(){
                 shouldHaveIdRev(item.doc, doc._id, doc._rev);
                 expect(item.doc).to.have.property('hello', doc.hello);
               }
+              shouldHave2xxStatus(status);
             }
             done(err);
           });
@@ -303,19 +316,51 @@ describe('Database', function(){
     });
 
     describe('#commit', function(){
-
+      it('shoud be ok', function(done){
+        this.db.commit(function(err, body, status, headers, res){
+          if (!err) {
+            shouldBeOk(body);
+            shouldHave2xxStatus(status);
+          }
+          done(err);
+        });
+      });
     });
 
     describe('#purge', function(){
-
+      it('shoud be ok', function(done){
+        this.db.purge({}, function(err, body, status, headers, res){
+          if (!err) {
+            expect(body).to.have.property('purged');
+            shouldHave2xxStatus(status);
+          }
+          done(err);
+        });
+      });
     });
 
     describe('#compact', function(){
-
+      it('shoud be ok', function(done){
+        this.db.compact(function(err, body, status, headers, res){
+          if (!err) {
+            shouldBeOk(body);
+            shouldHave2xxStatus(status);
+          }
+          done(err);
+        });
+      });
     });
 
     describe('#vacuum', function(){
-
+      it('shoud be ok', function(done){
+        this.db.vacuum(function(err, body, status, headers, res){
+          if (!err) {
+            shouldBeOk(body);
+            shouldHave2xxStatus(status);
+          }
+          done(err);
+        });
+      });
     });
 
   });
@@ -331,6 +376,7 @@ describe('Database', function(){
     this.db.put(doc, function(err, body, status, headers, res){
       if (!err) {
         shouldHaveIdRev(body, doc._id, body._rev);
+        shouldHave2xxStatus(status);
         doc._rev = body._rev;
       }
       done(err);
@@ -348,13 +394,10 @@ describe('Database', function(){
           expect(item).to.have.property('rev');
           doc._rev = item.rev;
         }
+        shouldHave2xxStatus(status);
       }
       done(err);
     });
-  }
-
-  function shouldBeOk(body) {
-    expect(body).to.have.property('ok', true);
   }
 
   function shouldHaveIdRev(body, id, rev) {

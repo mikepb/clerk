@@ -10,6 +10,6 @@ build:
 	uglifyjs $(OUTJS) > $(MINJS)
 
 test:
-	mocha --reporter $(REPORTER)
+	mocha --reporter $(REPORTER) --require 'test/shared'
 
 .PHONY: build test
