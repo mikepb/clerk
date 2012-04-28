@@ -12,17 +12,7 @@ Apache License
 ){
 
   var global = this;
-
-  var GET = 'GET'
-    , HEAD = 'HEAD'
-    , POST = 'POST'
-    , PUT = 'PUT'
-    , DELETE = 'DELETE'
-    , COPY = 'COPY';
-
-  var slice = [].slice;
-
-  var previousClerk = global.clerk; global.clerk = clerk;
+  var previousClerk = this.clerk; this.clerk = clerk;
 
   if (module) module.exports = clerk;
 
@@ -36,7 +26,7 @@ Apache License
    */
 
   function extend(target /* sources.. */) {
-    var sources = slice.call(arguments, 1)
+    var sources = [].slice.call(arguments, 1)
       , source, key, i = 0;
     while (source = sources[i++]) {
       for (key in source) target[key] = source[key];
@@ -214,7 +204,7 @@ Apache License
     /**
      * Service request and parse JSON response.
      *
-     * @param {String} [method="GET"] HTTP method.
+     * @param {String} [method="'GET'"] HTTP method.
      * @param {String} [path=this.uri] HTTP URI.
      * @param {Object} [query] HTTP query options.
      * @param {Object} [body] HTTP body.
@@ -228,7 +218,7 @@ Apache License
      */
 
     request: function(/* [method], [path], [query], [data], [headers], [callback] */) {
-      var args = slice.call(arguments)
+      var args = [].slice.call(arguments)
         , callback = isFunction(args[args.length - 1]) && args.pop()
         , headers = args[4] || {}
         , path = args[1] ? '/' + args[1] : '';
@@ -236,7 +226,7 @@ Apache License
       if (!('Content-Type' in headers)) headers['Content-Type'] = 'application/json';
 
       this._request(
-        args[0] || GET,                             // method
+        args[0] || 'GET',                             // method
         this.uri + path,                            // uri
         args[2],                                    // query
         args[3] && JSON.stringify(args[3],
@@ -292,7 +282,7 @@ Apache License
             , data = xhr.responseText
             , err;
 
-          if (method == HEAD) {
+          if (method == 'HEAD') {
             data = headers;
           } else if (data) {
             try {
@@ -329,7 +319,7 @@ Apache License
           item = data[i] = meta(data[i]);
           if (json.rows && item.doc) item.doc = meta(item.doc);
         }
-        data = slice.call(data);
+        data = [].slice.call(data);
         extend(data.__proto__ = [], json).json = json;
       } else {
         data = meta(json);
@@ -432,7 +422,7 @@ Apache License
       }
 
       // [id], [doc], [query], [header], [callback]
-      args = slice.call(args, start);
+      args = [].slice.call(args, start);
 
       request.f = isFunction(args[args.length - 1]) && args.pop();
       request.p = isString(args[0]) && encodeURI(args.shift());
@@ -489,7 +479,7 @@ Apache License
      */
 
     databases: function(/* [query], [headers], [callback] */) {
-      return this._(arguments)(GET, '_all_dbs');
+      return this._(arguments)('GET', '_all_dbs');
     },
 
     /**
@@ -503,7 +493,7 @@ Apache License
     uuids: function(count /* [query], [headers], [callback] */) {
       var request = this._(arguments, +count == count ? 1 : 0);
       if (count > 1) request.q.count = count;
-      return request(GET, '_uuids');
+      return request('GET', '_uuids');
     },
 
     /**
@@ -514,7 +504,7 @@ Apache License
      */
 
     info: function(/* [query], [headers], [callback] */) {
-      return this._(arguments)(GET);
+      return this._(arguments)('GET');
     },
 
     /**
@@ -525,7 +515,7 @@ Apache License
      */
 
     stats: function(/* [query], [headers], [callback] */) {
-      return this._(arguments)(GET, '_stats');
+      return this._(arguments)('GET', '_stats');
     },
 
     /**
@@ -545,7 +535,7 @@ Apache License
         if (e instanceof SyntaxError) e = null;
         callback.apply(this, arguments);
       };
-      return request(GET, '_log');
+      return request('GET', '_log');
     },
 
     /**
@@ -556,7 +546,7 @@ Apache License
      */
 
     tasks: function(/* [query], [headers], [callback] */) {
-      return this._(arguments)(GET, '_active_tasks');
+      return this._(arguments)('GET', '_active_tasks');
     },
 
     /**
@@ -569,7 +559,7 @@ Apache License
 
     config: function(/* [key], [value], [query], [headers], [callback] */) {
       var request = this._(arguments, 0, 1);
-      return request(request.b ? PUT : GET,
+      return request(request.b ? 'PUT' : 'GET',
         '_config' + (request.p ? '/' + request.p : '')
       );
     },
@@ -595,7 +585,7 @@ Apache License
      */
 
     replicate: function(options /* [query], [headers], [callback] */) {
-      return this._(arguments, 1)(POST, '_replicate', { b: options });
+      return this._(arguments, 1)('POST', '_replicate', { b: options });
     },
 
     /**
@@ -605,7 +595,7 @@ Apache License
      */
 
     restart: function(/* [path], [query], [headers], [callback] */) {
-      return this._(arguments)(POST, '_restart');
+      return this._(arguments)('POST', '_restart');
     }
 
   };
@@ -637,7 +627,7 @@ Apache License
      */
 
     create: function(/* [query], [headers], [callback] */) {
-      return this._(arguments)(PUT);
+      return this._(arguments)('PUT');
     },
 
     /**
@@ -647,7 +637,7 @@ Apache License
      */
 
     destroy: function(/* [query], [headers], [callback] */) {
-      return this._(arguments)(DELETE);
+      return this._(arguments)('DELETE');
     },
 
     /**
@@ -657,7 +647,7 @@ Apache License
      */
 
     info: function(/* [query], [headers], callback */) {
-      return this._(arguments)(GET);
+      return this._(arguments)('GET');
     },
 
     /**
@@ -673,7 +663,7 @@ Apache License
         callback(err, status === 200, status, headers, xhr);
       };
 
-      return request(HEAD);
+      return request('HEAD');
     },
 
     /**
@@ -690,11 +680,11 @@ Apache License
      *   @param {Object} data Response data.
      *   @param {Integer} status Response status code.
      * @return This object for chaining.
-     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#GET)
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#'GET')
      */
 
     get: function(/* [id], [query], [headers], [callback] */) {
-      return this._(arguments)(GET);
+      return this._(arguments)('GET');
     },
 
     /**
@@ -713,7 +703,7 @@ Apache License
      *     @param [result.contentLength] Content length. Only available when
      *       getting metadata for single document.
      * @return This object for chaining.
-     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#HEAD)
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#'HEAD')
      */
 
     head: function(/* [id], [query], [headers], callback */) {
@@ -730,7 +720,7 @@ Apache License
         }, status, headers, xhr);
       };
 
-      return request(HEAD);
+      return request('HEAD');
     },
 
     /**
@@ -758,11 +748,11 @@ Apache License
      *     batch mode. Documents will not be written to disk immediately,
      *     increasing the chances of write failure.
      * @return This object for chaining.
-     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#POST)
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#'POST')
      */
 
     post: function(doc /* [query], [headers], [callback] */) {
-      return this._(arguments, 1)(POST, 0, { b: doc });
+      return this._(arguments, 1)('POST', 0, { b: doc });
     },
 
     /**
@@ -771,14 +761,14 @@ Apache License
      * @param {Object} doc Document data. Requires `id` and `rev`.
      * @param {String} [options] Options.
      * @return This object for chaining.
-     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#PUT)
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#'PUT')
      */
 
     put: function(/* [doc], [query], [headers], [callback] */) {
       var request = this._(arguments, 0, 1);
       // prevent acidentally creating database
       if (!request.p) throw new Error('missing id');
-      return request(PUT);
+      return request('PUT');
     },
 
     /**
@@ -787,7 +777,7 @@ Apache License
      * @param {String} doc Document or document ID.
      * @param {Object} [query] HTTP query options.
      * @return This object for chaining.
-     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#DELETE)
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#'DELETE')
      * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
      */
 
@@ -806,7 +796,7 @@ Apache License
         var request = this._(arguments, 0, 1);
         // prevent acidentally deleting database
         if (!request.p) throw new Error('missing id');
-        return request(DELETE);
+        return request('DELETE');
       }
     },
 
@@ -829,7 +819,7 @@ Apache License
      *     for `target.id`.
      * @param {Object} [query] HTTP query options.
      * @return This object for chaining.
-     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#COPY)
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#'COPY')
      */
 
     copy: function(source, target /* [query], [headers], [callback] */) {
@@ -843,7 +833,7 @@ Apache License
       if (targetRev) targetPath += '?rev=' + encodeURIComponent(targetRev);
 
       request.h.Destination = targetPath;
-      return request(COPY, sourcePath);
+      return request('COPY', sourcePath);
     },
 
     /**
@@ -872,7 +862,7 @@ Apache License
     all: function(/* [query], [headers], [callback] */) {
       var request = this._(arguments)
         , body = this._viewOptions(request.q);
-      return request(body ? POST : GET, '_all_docs', { b: body });
+      return request(body ? 'POST' : 'GET', '_all_docs', { b: body });
     },
 
     /**
@@ -922,7 +912,7 @@ Apache License
       }
 
       body = this._viewOptions(request.q, body);
-      return request(body ? POST : GET, path, { b: body });
+      return request(body ? 'POST' : 'GET', path, { b: body });
     },
 
     /**
@@ -991,7 +981,7 @@ Apache License
      */
 
     _changes: function(request) {
-      return request(GET, '_changes');
+      return request('GET', '_changes');
     },
 
     /**
@@ -1010,7 +1000,7 @@ Apache License
 
     bulk: function(docs /* [query], [headers], [callback] */) {
       var request = this._(arguments, 1); request.q.docs = docs;
-      return request(POST, '_bulk_docs', { q: 0, b: request.q });
+      return request('POST', '_bulk_docs', { q: 0, b: request.q });
     },
 
     /**
@@ -1032,7 +1022,7 @@ Apache License
       path = '_design/' + encodeURIComponent(path[0]) + '/_update/' + encodeURIComponent(path[1]);
       if (request.p) path += '/' + request.p;
 
-      return request(request.p ? PUT : POST, path, {
+      return request(request.p ? 'PUT' : 'POST', path, {
         q: request.b,
         b: request.q
       });
@@ -1070,7 +1060,7 @@ Apache License
       request.p = encodeURIComponent(doc._id || doc.id) + '/' + encodeURIComponent(attachmentName);
       if (!request.q.rev) request.q.rev = doc._rev || doc.rev;
       request.q.body = data;
-      return request(PUT, path);
+      return request('PUT', path);
     },
 
     /**
@@ -1102,7 +1092,7 @@ Apache License
     */
 
     commit: function(/* [query], [headers], [callback] */) {
-      return this._(arguments)(POST, '_ensure_full_commit');
+      return this._(arguments)('POST', '_ensure_full_commit');
     },
 
     /**
@@ -1113,7 +1103,7 @@ Apache License
      */
 
     purge: function(revs /* [query], [headers], [callback] */) {
-      return this._(arguments, 1)(POST, '_purge', { b: revs });
+      return this._(arguments, 1)('POST', '_purge', { b: revs });
     },
 
     /**
@@ -1126,7 +1116,7 @@ Apache License
 
     compact: function(/* [design], [query], [headers], [callback] */) {
       var request = this._(arguments);
-      return request(POST,
+      return request('POST',
         '_compact' + (request.p ? '/' + request.p : '')
       );
     },
@@ -1139,7 +1129,7 @@ Apache License
      */
 
     vacuum: function(/* [query], [headers], [callback] */) {
-      return this._(arguments)(POST, '_view_cleanup');
+      return this._(arguments)('POST', '_view_cleanup');
     },
 
     /**
