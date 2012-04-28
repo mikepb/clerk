@@ -116,12 +116,93 @@ describe('Client', function(){
   });
 
   describe('#config', function(){
-  });
 
-  describe('#setConfig', function(){
-  });
+    it('shoud return server config', function(done){
+      this.client.config(function(err, body, status, headers, res){
+        if (!err) {
+          expect(body).to.be.an('object');
+          expect(body).to.have.property('couchdb');
+          expect(body).to.have.property('daemons');
+          expect(body).to.have.property('httpd');
+          shouldHave2xxStatus(status);
+        }
+        done(err);
+      });
+    });
 
-  describe('#delConfig', function(){
+    it('shoud return server config object', function(done){
+      this.client.config('couchdb', function(err, body, status, headers, res){
+        if (!err) {
+          expect(body).to.be.an('object');
+          expect(body).to.have.property('database_dir');
+          expect(body).to.have.property('delayed_commits');
+          expect(body).to.have.property('max_document_size');
+          shouldHave2xxStatus(status);
+        }
+        done(err);
+      });
+    });
+
+    it('shoud return server config value', function(done){
+      this.client.config('couchdb/database_dir', function(err, body, status, headers, res){
+        if (!err) {
+          expect(body).to.be.a('string');
+          shouldHave2xxStatus(status);
+        }
+        done(err);
+      });
+    });
+
+    describe('changing config value', function(){
+
+      beforeEach(function(done){
+        this.client.config('uuids/algorithm', 'sequential', function(err, body, status, headers, res){
+          if (!err) {
+            shouldHave2xxStatus(status);
+          }
+          done(err);
+        });
+      });
+
+      beforeEach(function(done){
+        this.client.config('uuids/algorithm', function(err, body, status, headers, res){
+          if (!err) {
+            expect(body).to.be('sequential');
+            shouldHave2xxStatus(status);
+          }
+          done(err);
+        });
+      });
+
+      afterEach(function(done){
+        this.client.config('uuids/algorithm', function(err, body, status, headers, res){
+          if (!err) {
+            expect(body).to.be('utc_random');
+            shouldHave2xxStatus(status);
+          }
+          done(err);
+        });
+      });
+
+      afterEach(function(done){
+        this.client.config('uuids/algorithm', 'sequential', function(err, body, status, headers, res){
+          if (!err) {
+            shouldHave2xxStatus(status);
+          }
+          done(err);
+        });
+      });
+
+      it('shoud set server config value', function(done){
+        this.client.config('uuids/algorithm', 'utc_random', function(err, body, status, headers, res){
+          if (!err) {
+            shouldHave2xxStatus(status);
+          }
+          done(err);
+        });
+      });
+    });
+
   });
 
   describe('#replicate', function(){

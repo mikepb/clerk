@@ -430,9 +430,10 @@
       request.h = args[withDoc ? 2 : 1] || {};
 
       if (withDoc) {
-        doc = request.b = args[0];
-        if (id = request.p || doc._id || doc.id) request.p = id;
-        if (rev = request.q.rev || doc._rev || doc.rev) request.q.rev = rev;
+        if (doc = (request.b = args[0])) {
+          if (id = request.p || doc._id || doc.id) request.p = id;
+          if (rev = request.q.rev || doc._rev || doc.rev) request.q.rev = rev;
+        }
       }
 
       return request;
@@ -490,7 +491,7 @@
      */
 
     uuids: function(count /* [query], [headers], [callback] */) {
-      var request = this._(arguments, +count === count ? 1 : 0);
+      var request = this._(arguments, +count == count ? 1 : 0);
       if (count > 1) request.q.count = count;
       return request(GET, '_uuids');
     },
@@ -549,43 +550,17 @@
     },
 
     /**
-     * Get configuration values.
+     * Get or set configuration values.
      *
      * @param {String} [key] Configuration section or key.
+     * @param {String} [value] Configuration value.
      * @return This object for chaining.
      */
 
-    config: function(/* [key], [query], [callback] */) {
-      var request = this._(arguments);
-      return request(GET,
-        '_config' + (request.p ? '/' + encodeURIComponent(request.p) : '')
-      );
-    },
-
-    /**
-     * Set configuration value.
-     *
-     * @param {String} key Configuration section and key.
-     * @param {String} value Configuration value.
-     * @return This object for chaining.
-     */
-
-    setConfig: function(key, value /* [query], [headers], [callback] */) {
-      return this._(arguments, 2)(PUT,
-        '_config/' + encodeURIComponent(key)
-      );
-    },
-
-    /**
-     * Delete configuration value.
-     *
-     * @param {String} key Configuration section and key.
-     * @return This object for chaining.
-     */
-
-    delConfig: function(key /* [query], [headers], [callback] */) {
-      return this._(arguments, 1)(DELETE,
-        '_config/' + encodeURIComponent(key)
+    config: function(/* [key], [value], [query], [headers], [callback] */) {
+      var request = this._(arguments, 0, 1);
+      return request(request.b ? PUT : GET,
+        '_config' + (request.p ? '/' + request.p : '')
       );
     },
 
