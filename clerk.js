@@ -211,8 +211,9 @@
             } catch (e) {
               err = e;
             }
-            if (!err) data = self._response(data);
           }
+
+          if (!err) data = self._response(data);
 
           callback(err, data, xhr.status, headers, xhr);
         }
@@ -227,8 +228,8 @@
       if (data) {
         json = extend(data, json);
       } else {
-        if (json.id) json._id = json.id;
-        if (json.rev) json._rev = json.rev;
+        if (!json.id ^ !json._id) json._id = json.id = json._id || json.id;
+        if (!json.rev ^ !json._rev) json._rev = json.rev = json._rev || json.rev;
       }
 
       return json;
@@ -631,12 +632,14 @@
      */
 
     head: function(/* [id], [query], [headers], callback */) {
-      var request = this._(arguments), callback = request.f;
+      var request = this._(arguments), callback = request.f
+        , id = request.p
+        , rev;
 
       request.f = function(err, body, status, headers, xhr) {
         callback(err, err ? body : {
-          id: request.p,
-          rev: headers.etag && JSON.parse(headers.etag),
+          _id: id, id: id,
+          _rev: rev = headers.etag && JSON.parse(headers.etag), rev: rev,
           contentType: headers['content-type'],
           contentLength: headers['content-length']
         }, status, headers, xhr);
@@ -661,7 +664,7 @@
     put: function(/* [id], [rev], [doc], [query], [headers], [callback] */) {
       var request = this._(arguments, 0, 1);
 
-      if (!request.p) request.p = request.b._id;
+      if (!request.p) request.p = request.b._id || request.b.id;
       if (request.q.rev) {
         request.b._rev = decodeURIComponent(request.q.rev);
         delete request.q.rev;
@@ -725,7 +728,7 @@
           @param {ClientResponse} [callback.response] ClientResponse object.
      */
 
-    del: function(id, rev /* [query], [headers], [callback] */) {
+    del: function(/* id, rev, [query], [headers], [callback] */) {
       var request = this._(arguments)(DELETE);
       // prevent acidentally deleting database
       if (!request.q.id || !request.q.rev) throw new Error('missing id or rev');
