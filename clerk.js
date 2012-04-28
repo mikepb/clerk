@@ -124,7 +124,9 @@
     return db ? client.database(db) : client;
   };
 
-  clerk._parseURI = function(uri, match) {
+  clerk._parseURI = function(uri) {
+    var match;
+
     if (uri) {
       uri = uri.replace(/\/+/g, '\/').replace(/\/+$/g, '');
       if (match = /^(https?:\/\/)(?:([^@:]+):([^@]+)@)?([^\/]+)(.*)$/.exec(uri)) {
@@ -135,7 +137,8 @@
         };
       }
     }
-    return { h: uri || '' };
+
+    return { host: uri || '' };
   };
 
   var Base = clerk.Base = {
@@ -166,7 +169,7 @@
 
       self._request(
         args[0] || GET,                             // method
-        self.uri + path,                            // path
+        self.uri + path,                            // uri
         args[2],                                    // query
         args[3] && JSON.stringify(args[3],
           /^\/_design/.test(path) && self._replacer
@@ -186,14 +189,13 @@
     _request: function(method, uri, query, body, headers, auth, callback) {
       var self = this
         , xhr = new XMLHttpRequest()
-        , header, key, qval;
+        , qval = [], header, key;
 
       if (query) {
-        qval = [];
         for (key in query) {
           qval.push(encodeURIComponent(key) + '=' + encodeURIComponent(query[key]));
         }
-        uri += '?' + qval.join('&');
+        if (qval.length) uri += '?' + qval.join('&');
       }
 
       xhr.open(method, uri, true, auth.user, auth.pass);
@@ -239,7 +241,7 @@
           item = data[i] = meta(data[i]);
           if (json.rows) item.doc = meta(item.doc);
         }
-        data = extend(data, json);
+        extend(data, json);
         data.json = json;
       } else {
         data = meta(json);
@@ -889,6 +891,67 @@
 
       body = this._viewOptions(request.q, body);
       return request(body ? POST : GET, path, { b: body });
+    },
+
+    /**
+        Subscribe to database changes.
+
+        The `feed` option determines how the callback is called:
+
+          - `normal` calls the callback once.
+          - `continuous` calls the callback each time an update is received.
+          - `longpoll` waits for a response, then calls the callback once.
+
+        @param {Object} [options]
+          @param {String} [options.feed="normal"] Type of feed. See comments
+            above.
+          @param {String} [options.filter] Filter updates using this filter.
+          @param {Integer} [options.limit] Maximum number of rows to return.
+          @param {Integer} [options.since=0] Start results from this sequence
+            number.
+          @param {Boolean} [options.include_docs=false] Include documents with
+            results.
+          @param {Integer} [options.timeout=1000] Maximum period in milliseconds
+            to wait for a change before sending a response, even if there are no
+            results.
+          @param {Integer} [options.heartbeat=1000] Period in milliseconds after
+            which an empty line is sent. Applicable only to feed types
+            `longpoll` and `continuous`. Overrides `options.timeout` to keep the
+            feed alive indefinitely.
+        @param {Function} callback Callback function.
+          @param {Error|null} callback.error Error or `null` on success.
+          @param {Object} [callback.data] Response data.
+          @param {ClientResponse} [callback.response] ClientResponse object.
+        @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_database_API#Changes)
+        @see [Couchbase API](http://www.couchbase.org/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db-changes_get)
+     */
+
+    changes: function(/* [query], [headers], [callback] */) {
+      var request = this._(arguments);
+      if (request.q.feed != 'longpoll') delete request.q.feed;
+      return this._changes(request);
+    },
+
+    follow: function(/* [query], [headers], callback */) {
+      var self = this
+        , request = self._(arguments)
+        , callback = request.f;
+
+      request.q.feed = 'longpoll';
+      request.f = function(err, doc) {
+        var body = doc, i = 0, len = doc.length, stop;
+        for (; i < len; i++) {
+          doc = body[i];
+          if (stop = callback.apply(this, arguments) === false || err) break;
+        }
+        if (!stop) self._changes(request);
+      };
+
+      return self._changes(request);
+    },
+
+    _changes: function(request) {
+      return request(GET, '_changes');
     },
 
     /**

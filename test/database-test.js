@@ -307,6 +307,52 @@ describe('Database', function(){
 
     });
 
+    describe('#changes', function(){
+      it('should get changes', function(done){
+        var db = this.db, doc = this.doc;
+        putDocument.call(this, function(err){
+          if (err) return done(err);
+          db.changes(function(err, body, status){
+            if (!err) {
+              expect(body).to.be.an('array');
+              expect(body).to.have.length(1);
+              expect(body[0]).to.have.property('changes');
+              expect(body[0].changes).to.be.an('array');
+              expect(body[0].changes[0]).to.have.property('rev', doc._rev);
+              shouldHave2xxStatus(status);
+            }
+            done(err);
+          });
+        });
+      });
+    });
+
+    describe('#follow', function(){
+      it('should follow changes', function(done){
+        var db = this.db
+          , docs = this.docs;
+
+        db.follow(function(err, body, status){
+          if (err) return done(err);
+          var doc = docs.shift();
+
+          expect(body).to.have.property('id', doc._id);
+          expect(body.changes).to.be.an('array');
+          expect(body.changes[0]).to.have.property('rev', doc._rev);
+          shouldHave2xxStatus(status);
+
+          if (!docs.length) {
+            done();
+            return false;
+          }
+        });
+
+        bulkDocuments.call(this, function(err){
+          if (err) return done(err);
+        });
+      });
+    });
+
     describe('#update', function(){
 
     });
