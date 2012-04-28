@@ -8,15 +8,15 @@ if (typeof require != 'undefined') {
 describe('Database', function(){
 
   before(function(){
-    this.doc = { _id: '0' };
-  });
-
-  before(function(){
     this.client = new clerk.Client('http://127.0.0.1:5984');
     this.db = this.client.database('clerk-test');
   });
 
   before(destroyDB);
+
+  beforeEach(function(){
+    this.doc = { _id: '0' };
+  });
 
   describe('#create', function(){
 
@@ -88,18 +88,6 @@ describe('Database', function(){
         });
       });
 
-      describe('#put', function(){
-        it('shoud store document', function(done){
-          this.db.put('0', {}, function(err, body, status, headers, res){
-            if (!err) {
-              shouldBeOk(body);
-              shouldHaveIdRev(body, '0', '1-967a00dff5e02add41819138abb3284d');
-            }
-            done(err);
-          });
-        });
-      });
-
       describe('#post', function(){
         it('shoud store document', function(done){
           this.db.post({}, function(err, body, status, headers, res){
@@ -112,20 +100,23 @@ describe('Database', function(){
         });
       });
 
+      describe('#put', function(){
+        it('shoud store document', function(done){
+          this.db.put('0', {}, function(err, body, status, headers, res){
+            if (!err) {
+              shouldBeOk(body);
+              shouldHaveIdRev(body, '0', '1-967a00dff5e02add41819138abb3284d');
+            }
+            done(err);
+          });
+        });
+      });
+
     });
 
     describe('getting documents', function(){
 
-      beforeEach(function(done){
-        var doc = this.doc;
-        this.db.put(doc, function(err, body, status, headers, res){
-          if (!err) {
-            shouldHaveIdRev(body, doc._id, body._rev);
-            doc._rev = body._rev;
-          }
-          done(err);
-        });
-      });
+      beforeEach(putDocument);
 
       describe('#get', function(){
         it('shoud return document', function(done){
@@ -155,20 +146,24 @@ describe('Database', function(){
 
     describe('updating documents', function(){
 
-      xdescribe('#post', function(){
-        it('shoud return value', function(done){
-          this.db.post(function(err, body, status, headers, res){
+      beforeEach(putDocument);
+
+      describe('#post', function(){
+        it('shoud return document metadata', function(done){
+          var doc = this.doc;
+          this.db.post(doc, function(err, body, status, headers, res){
             if (!err) {
-              shouldBeOk(body);
+              shouldHaveIdRev(body, doc._id, '2-7051cbe5c8faecd085a3fa619e6e6337');
             }
             done(err);
           });
         });
       });
 
-      xdescribe('#del', function(){
-        it('shoud return value', function(done){
-          this.db.del(function(err, body, status, headers, res){
+      describe('#del', function(){
+        it('shoud be ok', function(done){
+          var doc = this.doc;
+          this.db.del(doc._id, doc._rev, function(err, body, status, headers, res){
             if (!err) {
               shouldBeOk(body);
             }
@@ -194,6 +189,17 @@ describe('Database', function(){
   function destroyDB(done){
     this.db.destroy(function(){
       done();
+    });
+  }
+
+  function putDocument(done){
+    var doc = this.doc;
+    this.db.put(doc, function(err, body, status, headers, res){
+      if (!err) {
+        shouldHaveIdRev(body, doc._id, body._rev);
+        doc._rev = body._rev;
+      }
+      done(err);
     });
   }
 

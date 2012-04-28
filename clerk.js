@@ -649,34 +649,6 @@
     },
 
     /**
-        Put document in database.
-
-        @param {String} [id] Document ID. If provided, also requires rev.
-        @param {String} [rev] Document revision. If provided, also requires id.
-        @param {Object} doc Document data.
-        @param {String} [options] Options.
-        @param {Function} callback Callback function.
-          @param {Error|null} callback.error Error or `null` on success.
-          @param {Object[]} [callback.results] Results.
-          @param {ClientResponse} [callback.response] ClientResponse object.
-    */
-
-    put: function(/* [id], [rev], [doc], [query], [headers], [callback] */) {
-      var request = this._(arguments, 0, 1);
-
-      if (!request.p) request.p = request.b._id || request.b.id;
-      if (request.q.rev) {
-        request.b._rev = decodeURIComponent(request.q.rev);
-        delete request.q.rev;
-      }
-
-      // prevent acidentally creating database
-      if (!request.p) throw new Error('missing id');
-
-      return request(PUT);
-    },
-
-    /**
         Post document to database.
 
         If documents have no ID, a document ID will be automatically generated
@@ -717,6 +689,34 @@
     },
 
     /**
+        Put document in database.
+
+        @param {String} [id] Document ID. If provided, also requires rev.
+        @param {String} [rev] Document revision. If provided, also requires id.
+        @param {Object} doc Document data.
+        @param {String} [options] Options.
+        @param {Function} callback Callback function.
+          @param {Error|null} callback.error Error or `null` on success.
+          @param {Object[]} [callback.results] Results.
+          @param {ClientResponse} [callback.response] ClientResponse object.
+    */
+
+    put: function(/* [id], [rev], [doc], [query], [headers], [callback] */) {
+      var request = this._(arguments, 0, 1);
+
+      if (!request.p) request.p = request.b._id || request.b.id;
+      if (request.q.rev) {
+        request.b._rev = decodeURIComponent(request.q.rev);
+        delete request.q.rev;
+      }
+
+      // prevent acidentally creating database
+      if (!request.p) throw new Error('missing id');
+
+      return request(PUT);
+    },
+
+    /**
         Delete document.
 
         @param {String} id Document ID.
@@ -729,10 +729,10 @@
      */
 
     del: function(/* id, rev, [query], [headers], [callback] */) {
-      var request = this._(arguments)(DELETE);
+      var request = this._(arguments);
       // prevent acidentally deleting database
-      if (!request.q.id || !request.q.rev) throw new Error('missing id or rev');
-      return request;
+      if (!request.p || !request.q.rev) throw new Error('missing id or rev');
+      return request(DELETE);
     },
 
     /**
