@@ -26,9 +26,8 @@ Apache License
    */
 
   function extend(target /* sources.. */) {
-    var sources = [].slice.call(arguments, 1)
-      , source, key, i = 0;
-    while (source = sources[i++]) {
+    var source, key, i = 1;
+    while (source = arguments[i++]) {
       for (key in source) target[key] = source[key];
     }
     return target;
@@ -199,7 +198,7 @@ Apache License
    * Encapsulates HTTP methods, JSON handling, and response coersion.
    */
 
-  var Base = clerk.Base = {
+  clerk.Base = {
 
     /**
      * Service request and parse JSON response.
@@ -451,13 +450,13 @@ Apache License
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Complete_HTTP_API_Reference)
    */
 
-  var Client = clerk.Client = function(uri, auth) {
+  clerk.Client = function(uri, auth) {
     this.uri = uri;
     this.auth = auth;
     this._db = {};
   };
 
-  Client = Client.prototype = {
+  clerk.Client.prototype = {
 
     /**
      * Select database to manipulate.
@@ -611,14 +610,14 @@ Apache License
    * @return This object for chaining.
    */
 
-  var Database = clerk.Database = function(client, name, auth) {
+  clerk.Database = function(client, name, auth) {
     this.client = client;
     this.name = name;
     this.uri = client.uri + '/' + encodeURIComponent(name);
     this.auth = auth;
   };
 
-  Database = Database.prototype = {
+  clerk.Database.prototype = {
 
     /**
      * Create database.
@@ -1158,7 +1157,9 @@ Apache License
 
   };
 
-  Client.__proto__ = Database.__proto__ = clerk.Base;
+  clerk.Client.prototype.__proto__ =
+  clerk.Database.prototype.__proto__ =
+  clerk.Base;
 
 })(
   typeof module != 'undefined' && module,

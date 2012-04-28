@@ -24,7 +24,7 @@ describe('Database', function(){
 
     afterEach(forceDestroyDB);
 
-    it('shoud create database', function(done){
+    it('should create database', function(done){
       this.db.create(function(err, body, status, headers, res){
         if (!err) {
           shouldBeOk(body);
@@ -43,7 +43,7 @@ describe('Database', function(){
       });
     });
 
-    it('shoud destroy database', function(done){
+    it('should destroy database', function(done){
       this.db.destroy(function(err, body, status, headers, res){
         if (!err) {
           shouldBeOk(body);
@@ -65,7 +65,7 @@ describe('Database', function(){
     });
 
     describe('#info', function(){
-      it('shoud return database info', function(done){
+      it('should return database info', function(done){
         this.db.info(function(err, body, status, headers, res){
           if (!err) {
             expect(body).to.have.property('db_name', 'clerk-test');
@@ -81,7 +81,7 @@ describe('Database', function(){
     describe('putting documents', function(){
 
       describe('#exists', function(){
-        it('shoud be true', function(done){
+        it('should be true', function(done){
           this.db.exists(function(err, body, status, headers, res){
             if (!err) {
               expect(body).to.be(true);
@@ -93,7 +93,7 @@ describe('Database', function(){
       });
 
       describe('#post', function(){
-        it('shoud store document', function(done){
+        it('should store document', function(done){
           this.db.post({}, function(err, body, status, headers, res){
             if (!err) {
               shouldBeOk(body);
@@ -106,7 +106,7 @@ describe('Database', function(){
       });
 
       describe('#put', function(){
-        it('shoud store document', function(done){
+        it('should store document', function(done){
           var doc = this.doc;
           this.db.put(doc, function(err, body, status, headers, res){
             if (!err) {
@@ -126,7 +126,7 @@ describe('Database', function(){
       beforeEach(putDocument);
 
       describe('#get', function(){
-        it('shoud return document', function(done){
+        it('should return document', function(done){
           var doc = this.doc;
           this.db.get(this.doc._id, function(err, body, status, headers, res){
             if (!err) {
@@ -140,7 +140,7 @@ describe('Database', function(){
       });
 
       describe('#head', function(){
-        it('shoud return document metadata', function(done){
+        it('should return document metadata', function(done){
           var doc = this.doc;
           this.db.head(this.doc._id, function(err, body, status, headers, res){
             if (!err) {
@@ -159,7 +159,7 @@ describe('Database', function(){
       beforeEach(putDocument);
 
       describe('#post', function(){
-        it('shoud return document metadata', function(done){
+        it('should return document metadata', function(done){
           var doc = this.doc;
           this.db.post(doc, function(err, body, status, headers, res){
             if (!err) {
@@ -172,7 +172,7 @@ describe('Database', function(){
       });
 
       describe('#del', function(){
-        it('shoud be ok', function(done){
+        it('should be ok', function(done){
           var doc = this.doc;
           this.db.del(doc, function(err, body, status, headers, res){
             if (!err) {
@@ -186,20 +186,20 @@ describe('Database', function(){
 
       describe('#copy', function(){
 
-        it('shoud copy id to id', function(done){
+        it('should copy id to id', function(done){
           shouldCopy.call(this, done, this.doc._id, '1', '1', '1-095d0517d4ee0271cc517163c4e465ff');
         });
 
-        it('shoud copy doc to id', function(done){
+        it('should copy doc to id', function(done){
           shouldCopy.call(this, done, this.doc, '1', '1', '1-095d0517d4ee0271cc517163c4e465ff');
         });
 
-        it('shoud copy doc to doc', function(done){
+        it('should copy doc to doc', function(done){
           var target = { _id: '1' };
           shouldCopy.call(this, done, this.doc, target, target._id, '1-095d0517d4ee0271cc517163c4e465ff');
         });
 
-        it('shoud copy doc to doc with rev', function(done){
+        it('should copy doc to doc with rev', function(done){
           var target = { _id: '1', _rev: this.doc._rev };
           shouldCopy.call(this, done, this.doc, target, target._id, '2-92c76f94974bbbb524cf9e18aedd3572');
         });
@@ -378,7 +378,7 @@ describe('Database', function(){
         this.replica.destroy(done);
       });
 
-      it('shoud be ok', function(done){
+      it('should be ok', function(done){
         var options = { target: this.replica.name };
         this.db.replicate(options, function(err, body, status, headers, res){
           if (!err) {
@@ -392,7 +392,7 @@ describe('Database', function(){
     });
 
     describe('#commit', function(){
-      it('shoud be ok', function(done){
+      it('should be ok', function(done){
         this.db.commit(function(err, body, status, headers, res){
           if (!err) {
             shouldBeOk(body);
@@ -404,7 +404,7 @@ describe('Database', function(){
     });
 
     describe('#purge', function(){
-      it('shoud be ok', function(done){
+      it('should be ok', function(done){
         this.db.purge({}, function(err, body, status, headers, res){
           if (!err) {
             expect(body).to.have.property('purged');
@@ -416,7 +416,7 @@ describe('Database', function(){
     });
 
     describe('#compact', function(){
-      it('shoud be ok', function(done){
+      it('should be ok', function(done){
         this.db.compact(function(err, body, status, headers, res){
           if (!err) {
             shouldBeOk(body);
@@ -428,7 +428,7 @@ describe('Database', function(){
     });
 
     describe('#vacuum', function(){
-      it('shoud be ok', function(done){
+      it('should be ok', function(done){
         this.db.vacuum(function(err, body, status, headers, res){
           if (!err) {
             shouldBeOk(body);
