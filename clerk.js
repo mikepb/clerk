@@ -833,7 +833,7 @@
 
     all: function(/* [query], [headers], [callback] */) {
       var request = this._(arguments)
-        , body = this._parseViewOptions(request.q);
+        , body = this._viewOptions(request.q);
       return request(body ? POST : GET, '_all_docs', { b: body });
     },
 
@@ -887,7 +887,7 @@
         body = view;
       }
 
-      body = this._parseViewOptions(request.q, body);
+      body = this._viewOptions(request.q, body);
       return request(body ? POST : GET, path, { b: body });
     },
 
@@ -1098,7 +1098,7 @@
       return request;
     },
 
-    _parseViewOptions: function(q, body) {
+    _viewOptions: function(q, body) {
       if (q) {
         if (q.key) q.key = JSON.stringify(q.key);
         if (q.startkey) q.startkey = JSON.stringify(q.startkey);
