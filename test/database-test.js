@@ -262,11 +262,33 @@ describe('Database', function(){
       beforeEach(bulkDocuments);
 
       describe('#all', function(){
+
+        it('should return metadata', function(done){
+          var docs = this.docs;
+          this.db.all(function(err, body, status, headers, res){
+            var i = 0, len, item, doc;
+            if (!err) {
+              expect(body).to.have.property('rows', body);
+              expect(body).to.have.property('total_rows', 9);
+              expect(body).to.have.property('offset', 0);
+              for (len = body.length; i < len; i++) {
+                item = body[i], doc = docs[i];
+                expect(item).to.have.property('id', doc._id);
+                expect(item).to.have.property('key', doc._id);
+                expect(item.value).to.have.property('rev', doc._rev);
+              }
+              shouldHave2xxStatus(status);
+            }
+            done(err);
+          });
+        });
+
         it('should return documents', function(done){
           var docs = this.docs;
           this.db.all({ include_docs: true }, function(err, body, status, headers, res){
             var i = 0, len, item, doc;
             if (!err) {
+              expect(body).to.have.property('rows', body);
               expect(body).to.have.property('total_rows', 9);
               expect(body).to.have.property('offset', 0);
               for (len = body.length; i < len; i++) {
@@ -282,6 +304,7 @@ describe('Database', function(){
             done(err);
           });
         });
+
       });
 
       describe('#view', function(){
@@ -297,6 +320,7 @@ describe('Database', function(){
           if (err) return done(err);
           db.changes(function(err, body, status){
             if (!err) {
+              expect(body).to.have.property('results', body);
               expect(body).to.be.an('array');
               expect(body).to.have.length(1);
               expect(body[0]).to.have.property('changes');
