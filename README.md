@@ -1,17 +1,19 @@
 clerk
 =====
 
-CouchDB library for node and the browser.
+CouchDB library for node and the browser (experimental).
 
 
-## Installation
+Installation
+------------
 
 ```bash
 npm install clerk
 ```
 
 
-## Running Tests
+Running Tests
+-------------
 
 ```bash
 npm install
@@ -19,12 +21,13 @@ npm test
 ```
 
 
-## Usage
+Usage
+-----
 
 ```javascript
 var clerk = require('clerk');
 
-var client = clerk.createClient('http://127.0.0.1:5984');
+var client = clerk('http://127.0.0.1:5984');
 
 var db = client.database('test');
 
