@@ -311,12 +311,12 @@ Apache License
         , i = 0, len, item;
 
       if (data) {
+        data = [].slice.call(data);
+        extend(data.__proto__ = [], json).json = json;
         for (len = data.length; i < len; i++) {
           item = data[i] = meta(data[i]);
           if (json.rows && item.doc) item.doc = meta(item.doc);
         }
-        data = [].slice.call(data);
-        extend(data.__proto__ = [], json).json = json;
       } else {
         data = meta(json);
       }
