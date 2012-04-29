@@ -720,7 +720,7 @@ Apache License
     },
 
     /**
-     * Post document to database.
+     * Post document(s) to database.
      *
      * If documents have no ID, a document ID will be automatically generated
      * on the server. If attachments are given, they will be automatically
@@ -739,16 +739,26 @@ Apache License
      *       MIME content type.
      *     @param {String|Object} [doc._attachments[filename].data] Attachment
      *       data. Will be Base64 encoded.
-     * @param {Object} [options] Options.
-     *   @param {Boolean} [options.batch] Allow server to write document in
+     * @param {Object} [query] HTTP query options.
+     *   @param {Boolean} [query.batch] Allow server to write document in
      *     batch mode. Documents will not be written to disk immediately,
      *     increasing the chances of write failure.
+     *   @param {Boolean} [query.all_or_nothing] For batch updating of
+     *     documents, use all-or-nothing semantics.
      * @return This object for chaining.
      * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#'POST')
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
      */
 
     post: function(doc /* [query], [headers], [callback] */) {
-      return this._(arguments, 1)('POST', 0, { b: doc });
+      var request = this._(arguments, 1);
+      if (isArray(doc)) {
+        request.p = '_bulk_docs';
+        request.b = { docs: doc };
+      } else {
+        request.b = doc;
+      }
+      return request('POST');
     },
 
     /**
@@ -787,7 +797,7 @@ Apache License
             _deleted: true
           };
         }
-        return this.bulk.apply(this, arguments);
+        return this.post.apply(this, arguments);
       } else {
         var request = this._(arguments, 0, 1);
         // prevent acidentally deleting database
@@ -978,25 +988,6 @@ Apache License
 
     _changes: function(request) {
       return request('GET', '_changes');
-    },
-
-    /**
-     * Insert or update documents in bulk.
-     *
-     * @param {Object[]} docs Array of documents to insert or update.
-     *   @param {String} [doc._id] Document ID.
-     *   @param {String} [doc._rev] Document revision.
-     *   @param {Boolean} [doc._deleted] Flag indicating whether this document
-     *     should be deleted.
-     * @param {Object} [query] HTTP query options.
-     *   @param {Boolean} [query.all_or_nothing] Use all-or-nothing semantics.
-     * @return This object for chaining.
-     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
-     */
-
-    bulk: function(docs /* [query], [headers], [callback] */) {
-      var request = this._(arguments, 1); request.q.docs = docs;
-      return request('POST', '_bulk_docs', { q: 0, b: request.q });
     },
 
     /**

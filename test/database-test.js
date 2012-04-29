@@ -220,9 +220,9 @@ describe('Database', function(){
 
     describe('batch', function(){
 
-      describe('#bulk', function(){
+      describe('#post', function(){
         it('should be ok', function(done){
-          this.db.bulk(this.docs, function(err, body, status, headers, res){
+          this.db.post(this.docs, function(err, body, status, headers, res){
             if (!err) {
               expect(body).to.be.an('array');
               expect(body).to.have.length(9);
@@ -455,7 +455,7 @@ describe('Database', function(){
 
   function bulkDocuments(done) {
     var docs = this.docs;
-    this.db.bulk(docs, function(err, body, status, headers, res){
+    this.db.post(docs, function(err, body, status, headers, res){
       var i = 0, j, len, item, doc;
       if (!err) {
         for (len = body.length; i < len; i++) {
