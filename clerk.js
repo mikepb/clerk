@@ -637,7 +637,7 @@ Apache License
     },
 
     /**
-     * Check if database exists.
+     * Get database info.
      *
      * @return This object for chaining.
      */
