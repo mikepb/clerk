@@ -261,7 +261,7 @@ Apache License
         for (key in query) {
           qval.push(encodeURIComponent(key) + '=' + encodeURIComponent(query[key]));
         }
-        if (qval.length) uri += '?' + qval.join('&');
+        uri += '?' + qval.join('&');
       }
 
       xhr.open(method, uri, true, auth.user, auth.pass);
@@ -558,10 +558,11 @@ Apache License
      */
 
     config: function(/* [key], [value], [query], [headers], [callback] */) {
-      var request = this._(arguments, 0, 1);
-      return request(request.b ? 'PUT' : 'GET',
-        '_config' + (request.p ? '/' + request.p : '')
-      );
+      var args = [].slice.call(arguments)
+        , key = isString(args[0]) && args.shift() || ''
+        , value = isString(args[0]) && args.shift()
+        , request = this._(args);
+      return request(value ? 'PUT' : 'GET', '_config/' + key, { b: value });
     },
 
     /**
@@ -586,16 +587,6 @@ Apache License
 
     replicate: function(options /* [query], [headers], [callback] */) {
       return this._(arguments, 1)('POST', '_replicate', { b: options });
-    },
-
-    /**
-     * Restart server.
-     *
-     * @return This object for chaining.
-     */
-
-    restart: function(/* [path], [query], [headers], [callback] */) {
-      return this._(arguments)('POST', '_restart');
     }
 
   };
@@ -1107,9 +1098,7 @@ Apache License
 
     compact: function(/* [design], [query], [headers], [callback] */) {
       var request = this._(arguments);
-      return request('POST',
-        '_compact' + (request.p ? '/' + request.p : '')
-      );
+      return request('POST', '_compact/' + (request.p || ''));
     },
 
     /**

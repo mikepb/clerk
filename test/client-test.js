@@ -240,20 +240,4 @@ describe('Client', function(){
 
   });
 
-  // this is a problematic test
-  xdescribe('#restart', function(){
-    it('shoud restart server', function(done){
-      this.client.restart(function(err, body, status, headers, res){
-        // Server restarts closes connection prematurely
-        // if (!err) {
-        //   expect(body).to.have.property('ok', true);
-        // }
-        // done(err);
-
-        // allow time for server to restart
-        setTimeout(done, 1000);
-      });
-    });
-  });
-
 });
