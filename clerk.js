@@ -508,7 +508,7 @@ Apache License
     },
 
     /**
-     * Get tail of the server log file.
+     * Get server stats.
      *
      * @return This object for chaining.
      * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetLog)
