@@ -56,6 +56,4 @@ exec make test
 # Make minified version
 echo "Building minified version"
 exec make
-echo -n "Minified to "
-exec gzip clerk.min.js -c | wc -c | sed 's/ *//'
 exec git stage clerk.min.js

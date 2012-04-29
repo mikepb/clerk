@@ -5,7 +5,6 @@ Apache License
 */
 
 ;(function(
-  module,
   encodeURI,
   encodeURIComponent,
   decodeURIComponent
@@ -13,8 +12,6 @@ Apache License
 
   var global = this;
   var previousClerk = this.clerk; this.clerk = clerk;
-
-  if (module) module.exports = clerk;
 
   /**
    * Copy properties from sources to target.
@@ -1162,7 +1159,6 @@ Apache License
   clerk.Base;
 
 })(
-  typeof module != 'undefined' && module,
   encodeURI,
   encodeURIComponent,
   decodeURIComponent

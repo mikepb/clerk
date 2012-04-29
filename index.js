@@ -29,7 +29,8 @@ var crypto = require('crypto')
  * Clerk library.
  */
 
-var clerk = module.exports = require('./clerk');
+require('./clerk');
+var clerk = module.exports = global.clerk.noConflict();
 
 /**
  * Patchable prototypes.
