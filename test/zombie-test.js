@@ -5,11 +5,11 @@ var zombie = require("zombie")
 describe('zombie', function(){
 
   before(function(done){
+    this.port = parseInt(Math.random() * 9000, 10) + 1000;
+    this.uri = 'http://127.0.0.1:' + this.port;
     this.app = express.createServer();
-    this.app.use(express.logger());
     this.app.use(express.static(__dirname));
-    this.app.use(express.errorHandler());
-    this.server = this.app.listen(8888, done);
+    this.server = this.app.listen(this.port, done);
   });
 
   after(function(){
@@ -20,13 +20,13 @@ describe('zombie', function(){
     this.browser = new zombie();
   });
 
-  it('should pass tests', visit('http://127.0.0.1:8888'));
-  it('should pass tests for minified version', visit('http://127.0.0.1:8888/index-min.html'));
+  it('should pass tests', visit('/'));
+  it('should pass tests for minified version', visit('/index-min.html'));
 
   function visit(uri) {
     return function(done) {
       this.timeout(10000);
-      this.browser.visit(uri, function(err, browser){
+      this.browser.visit(this.uri + uri, function(err, browser){
         if (!err) {
           expect(browser.success).to.be.ok();
         }

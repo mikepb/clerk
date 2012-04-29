@@ -411,7 +411,7 @@ Apache License
 
         self.request(
           method,
-          path || request.p,
+          path || request.p || '',
           'q' in options ? options.q : request.q,
           'b' in options ? options.b : request.b,
           'h' in options ? options.h : request.h,
