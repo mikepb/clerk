@@ -145,8 +145,8 @@ Apache License
    * Create single CouchDB client.
    *
    * @param {String} uri Fully qualified URI.
-   * @return {Client|Database} If `uri` has a path, the last segment of the
-   *    path is used as the database name and a `Database` instance is
+   * @return {Client|DB} If `uri` has a path, the last segment of the
+   *    path is used as the database name and a `DB` instance is
    *    returned. Otherwise, a `Client` instance is returned.
    */
 
@@ -160,7 +160,7 @@ Apache License
     }
 
     client = new clerk.Client(uri.host, uri);
-    return db ? client.database(db) : client;
+    return db ? client.db(db) : client;
   };
 
   /**
@@ -191,7 +191,7 @@ Apache License
   };
 
   /**
-   * Base prototype for `Client` and `Database`.
+   * Base prototype for `Client` and `DB`.
    * Encapsulates HTTP methods, JSON handling, and response coersion.
    */
 
@@ -458,13 +458,13 @@ Apache License
     /**
      * Select database to manipulate.
      *
-     * @param {String} name Database name.
-     * @return {Database} Database object.
+     * @param {String} name DB name.
+     * @return {DB} DB object.
      */
 
-    database: function(name) {
+    db: function(name) {
       var db = this._db;
-      return db[name] || (db[name] = new clerk.Database(this, name, this.auth));
+      return db[name] || (db[name] = new clerk.DB(this, name, this.auth));
     },
 
     /**
@@ -474,7 +474,7 @@ Apache License
      * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetAllDbs)
      */
 
-    databases: function(/* [query], [headers], [callback] */) {
+    dbs: function(/* [query], [headers], [callback] */) {
       return this._(arguments)('GET', '_all_dbs');
     },
 
@@ -600,21 +600,21 @@ Apache License
    * Methods for CouchDB database.
    *
    * @param {Client} client Clerk client.
-   * @param {String} name Database name.
+   * @param {String} name DB name.
    * @param {Object} [auth] Authentication options.
    *   @param {String} [auth.user] Username.
    *   @param {String} [auth.pass] Password.
    * @return This object for chaining.
    */
 
-  clerk.Database = function(client, name, auth) {
+  clerk.DB = function(client, name, auth) {
     this.client = client;
     this.name = name;
     this.uri = client.uri + '/' + encodeURIComponent(name);
     this.auth = auth;
   };
 
-  clerk.Database.prototype = {
+  clerk.DB.prototype = {
 
     /**
      * Create database.
@@ -1146,7 +1146,7 @@ Apache License
   };
 
   clerk.Client.prototype.__proto__ =
-  clerk.Database.prototype.__proto__ =
+  clerk.DB.prototype.__proto__ =
   clerk.Base;
 
 })(

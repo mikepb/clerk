@@ -3,11 +3,11 @@ if (typeof require != 'undefined') {
     , expect = require('expect.js');
 }
 
-describe('Database', function(){
+describe('DB', function(){
 
   before(function(){
     this.client = new clerk.Client('http://127.0.0.1:5984');
-    this.db = this.client.database('clerk-test');
+    this.db = this.client.db('clerk-test');
   });
 
   before(forceDestroyDB);
@@ -367,7 +367,7 @@ describe('Database', function(){
     describe('#replicate', function(){
 
       beforeEach(function(){
-        this.replica = this.client.database('clerk-replicate-test');
+        this.replica = this.client.db('clerk-replicate-test');
       });
 
       beforeEach(function(done){

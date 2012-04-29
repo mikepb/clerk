@@ -37,7 +37,7 @@ var clerk = module.exports = global.clerk.noConflict();
  */
 
 var Base = clerk.Base
-  , Database = clerk.Database.prototype;
+  , DB = clerk.DB.prototype;
 
 /**
  * Remove irrelevant methods.
@@ -92,7 +92,7 @@ Base._request = function(method, uri, query, body, headers, auth, callback) {
 };
 
 // Node.js compatible follow method, based on `follow` package.
-Database.follow = function(/* [query], [headers], [callback] */) {
+DB.follow = function(/* [query], [headers], [callback] */) {
   var self = this
     , request = self._(arguments)
     , options = request.q

@@ -9,17 +9,17 @@ describe('Client', function(){
     this.client = new clerk.Client('http://127.0.0.1:5984');
   });
 
-  describe('#database', function(){
-    it('should return Database object', function(){
-      var db = this.client.database('test');
-      expect(db).to.be.a(clerk.Database);
+  describe('#db', function(){
+    it('should return DB object', function(){
+      var db = this.client.db('test');
+      expect(db).to.be.a(clerk.DB);
       expect(db).to.have.property('uri', 'http://127.0.0.1:5984/test');
     });
   });
 
-  describe('#databases', function(){
+  describe('#dbs', function(){
     it('shoud list databases', function(done){
-      this.client.databases(function(err, body, status, headers, res){
+      this.client.dbs(function(err, body, status, headers, res){
         if (!err) {
           expect(body).to.be.an('array');
           shouldHave2xxStatus(status);
@@ -205,8 +205,8 @@ describe('Client', function(){
   describe('#replicate', function(){
 
     beforeEach(function(){
-      this.db = this.client.database('clerk-test');
-      this.replica = this.client.database('clerk-replicate-test');
+      this.db = this.client.db('clerk-test');
+      this.replica = this.client.db('clerk-replicate-test');
     });
 
     beforeEach(forceDestroyDB);
