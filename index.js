@@ -47,24 +47,6 @@ delete clerk.noConflict;
 delete Base._headers;
 delete Base._getHeaders;
 
-/**
- * Copy properties from sources to target.
- *
- * @param {Object} target The target object.
- * @param {Object...} sources The source object.
- * @return {Object} The target object.
- * @api private
- */
-
-function extend(target /* sources.. */) {
-  var sources = [].slice.call(arguments, 1)
-    , source, key, i = 0;
-  while (source = sources[i++]) {
-    for (key in source) target[key] = source[key];
-  }
-  return target;
-}
-
 // auth uris are automatically handled
 Base._parseURI = function(uri) {
   if (uri) uri = uri.replace(/\/+/g, '\/').replace(/\/+$/g, '');
