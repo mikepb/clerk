@@ -362,6 +362,8 @@ Apache License
 
     /**
      * HTTP headers to parse.
+     *
+     * @api private
      */
 
     _headers: [
@@ -375,6 +377,8 @@ Apache License
 
     /**
      * Parse HTTP response headers.
+     *
+     * @api private
      */
 
     _getHeaders: function(xhr) {
