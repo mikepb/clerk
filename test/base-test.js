@@ -1,5 +1,5 @@
 if (typeof require != 'undefined') {
-  var clerk = require('clerk')
+  var clerk = require('..')
     , expect = require('expect.js');
 }
 
