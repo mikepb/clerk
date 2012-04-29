@@ -18,8 +18,9 @@
   },
   "devDependencies": {
     "expect.js": "~0.1.2",
+    "express": "~3.0",
     "mocha": "~1.0.0",
-    "expect.js": "~0.1.2"
+    "zombie": "~0.13.2"
   },
   "scripts": {
     "test": "make test"
