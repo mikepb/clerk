@@ -52,3 +52,4 @@ fi
 # Exec tests before commit
 echo "Running tests"
 exec make test
+exec git stage clerk.min.js
