@@ -1,4 +1,4 @@
-# clerk
+# clerk [![Build Status](https://secure.travis-ci.org/mikepb/clerk.png)](http://travis-ci.org/mikepb/clerk)
 
 CouchDB library for node and the browser (experimental)
 
