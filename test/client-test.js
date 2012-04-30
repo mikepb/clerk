@@ -5,9 +5,7 @@ if (typeof require != 'undefined') {
 
 describe('Client', function(){
 
-  before(function(){
-    this.client = new clerk.Client('http://127.0.0.1:5984');
-  });
+  before(clerkFactory);
 
   describe('#db', function(){
     it('should return DB object', function(){

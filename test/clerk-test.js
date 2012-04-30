@@ -6,9 +6,7 @@ if (typeof require != 'undefined') {
 
 describe('clerk', function(){
 
-  beforeEach(function(){
-    this.client = new clerk.Client('http://127.0.0.1:5984');
-  });
+  before(clerkFactory);
 
   if (fs) describe('package', function(){
 
