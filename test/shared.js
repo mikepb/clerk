@@ -6,7 +6,7 @@ if (typeof require != 'undefined') {
 (function(){
 
   this.clerkFactory = function() {
-    this.client = new clerk.Client('http://127.0.0.1:5984');
+    this.client = clerk('http://127.0.0.1:5984');
     this.db = this.client.db('clerk-test');
   };
 
