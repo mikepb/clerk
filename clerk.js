@@ -1070,7 +1070,7 @@ Apache License
      * Ensure recent changes are committed to disk.
      *
      * @return This object for chaining.
-    */
+     */
 
     commit: function(/* [query], [headers], [callback] */) {
       return this._(arguments)('POST', '_ensure_full_commit');
