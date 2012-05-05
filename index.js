@@ -36,7 +36,7 @@ var clerk = module.exports = global.clerk.noConflict();
  * Patchable prototypes.
  */
 
-var Base = clerk.Base
+var Base = clerk.Base.prototype
   , DB = clerk.DB.prototype;
 
 /**

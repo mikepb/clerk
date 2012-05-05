@@ -93,35 +93,16 @@ Apache License
   /**
    * Clerk library entry point.
    *
-   * @param {Array|Object|String} servers List of node URIs or map of named
-   *   nodes to URIs or a single URI.
-   * @return {Client|Function} If a list of servers is given, returns a
-   *   function to select a client, otherwise returns the client.
+   * @param {String} servers CouchDB server URI.
+   * @return {Client|DB} If a URI path is given, returns a `DB`, otherwise
+   *   returns a `Client`.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/)
    * @see [CouchDB Guide](http://guide.couchdb.org/)
    * @see [Couchbase 2.0](http://www.couchbase.com/docs/couchbase-single-server-2.0/)
    */
 
-  function clerk(servers) {
-    if (!servers || isString(servers)) {
-      return clerk.make(servers);
-    }
-
-    var serverNames = [], name, i = 0, len;
-
-    for (name in servers) {
-      servers[name] = clerk.make(servers[name]);
-      serverNames.push(name);
-    }
-
-    len = serverNames.length;
-
-    return function(name) {
-      var server;
-      if (!name) { name = serverNames[i++]; i %= len; }
-      if (!(server = servers[name])) throw new Error('no server configured');
-      return server;
-    };
+  function clerk(uri) {
+    return clerk.make(uri);
   }
 
   /**
@@ -194,7 +175,9 @@ Apache License
    * Encapsulates HTTP methods, JSON handling, and response coersion.
    */
 
-  clerk.Base = {
+  clerk.Base = function(){};
+
+  clerk.Base.prototype = {
 
     /**
      * Service request and parse JSON response.
@@ -456,7 +439,7 @@ Apache License
     this._db = {};
   };
 
-  clerk.Client.prototype = {
+  clerk.Client.prototype = extend(new clerk.Base(), {
 
     /**
      * Select database to manipulate.
@@ -587,7 +570,7 @@ Apache License
       return this._(arguments, 1)('POST', '_replicate', { b: options });
     }
 
-  };
+  });
 
   /**
    * Methods for CouchDB database.
@@ -607,7 +590,7 @@ Apache License
     this.auth = auth;
   };
 
-  clerk.DB.prototype = {
+  clerk.DB.prototype = extend(new clerk.Base(), {
 
     /**
      * Create database.
@@ -1134,11 +1117,7 @@ Apache License
       return body;
     }
 
-  };
-
-  clerk.Client.prototype.__proto__ =
-  clerk.DB.prototype.__proto__ =
-  clerk.Base;
+  });
 
 })(
   encodeURI,
