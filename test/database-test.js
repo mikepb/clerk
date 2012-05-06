@@ -373,7 +373,7 @@ describe('DB', function(){
 
     });
 
-    describe('#view', function(){
+    describe('#find', function(){
 
     });
 

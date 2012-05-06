@@ -120,7 +120,7 @@ Apache License
    * Library version.
    */
 
-  clerk.version = '0.2.0';
+  clerk.version = '0.3.0';
 
   /**
    * Create single CouchDB client.
@@ -882,7 +882,7 @@ Apache License
      * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_view_API)
      */
 
-    view: function(view /* [query], [headers], [callback] */) {
+    find: function(view /* [query], [headers], [callback] */) {
       var request = this._(arguments, 1), path, body;
 
       if (isString(view)) {
