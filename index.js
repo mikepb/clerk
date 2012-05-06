@@ -111,12 +111,14 @@ DB.follow = function(/* [query], [headers], [callback] */) {
  *   @param {String[]} uuids
  */
 
-clerk.uuids = function(count, encoding /* [query], [callback] */) {
-  var args = exports.unpackArgs(arguments);
+clerk.uuids = function(count, encoding) {
+  var args = [].slice.call(arguments)
+    , callback = typeof args[args.length - 1] === 'function' && args.pop();
 
-  if (isNaN(count = parseInt(count, 10))) {
-    count = 1;
-    encoding = count;
+  if (!isNaN(+count)) {
+    count = parseInt(count, 10);
+  } else {
+    encoding = count, count = 1;
   }
 
   if (encoding !== 'hex' && encoding !== 'base64') encoding = 'hex';
@@ -129,13 +131,22 @@ clerk.uuids = function(count, encoding /* [query], [callback] */) {
 
   for (i = 0; i < len; i += 16) {
     uuid = bytes.slice(i, i + 16).toString(encoding);
-    if (encoding === 'base64') {
-      uuid = uuid.replace(/[=]+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+    switch (encoding) {
+      case 'hex':
+        uuid = uuid.substr(0, 8) + '-' +
+               uuid.substr(8, 4) + '-' +
+               uuid.substr(12, 4) + '-' +
+               uuid.substr(16, 4) + '-' +
+               uuid.substr(20);
+        break;
+      case 'base64':
+        uuid = uuid.replace(/[=]+$/, '')
+                   .replace(/\+/g, '-')
+                   .replace(/\//g, '_');
+        break;
     }
     uuids.push(uuid);
   }
-
-  if (args.f) args.f(null, uuids);
 
   return uuids;
 };

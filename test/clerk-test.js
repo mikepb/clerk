@@ -8,6 +8,51 @@ describe('clerk', function(){
 
   before(clerkFactory);
 
+  if (typeof require != 'undefined') describe('#uuids', function(){
+
+    it('shoud return 1 uuid by default', function(){
+      var uuids = clerk.uuids();
+      expect(uuids).to.be.an('array');
+      expect(uuids).to.have.length(1);
+    });
+
+    shouldReturnUUIDs(1);
+    shouldReturnUUIDs(2);
+    shouldReturnUUIDs(3);
+    shouldReturnUUIDs(100);
+
+    shouldReturnUUIDs(1, 'hex');
+    shouldReturnUUIDs(2, 'hex');
+    shouldReturnUUIDs(3, 'hex');
+    shouldReturnUUIDs(100, 'hex');
+
+    shouldReturnUUIDs(1, '123');
+    shouldReturnUUIDs(2, '123');
+    shouldReturnUUIDs(3, '123');
+    shouldReturnUUIDs(100, '123');
+
+    shouldReturnUUIDs(1, 'base64');
+    shouldReturnUUIDs(2, 'base64');
+    shouldReturnUUIDs(3, 'base64');
+    shouldReturnUUIDs(100, 'base64');
+
+    function shouldReturnUUIDs(n, encoding) {
+      it('shoud return ' + n + ' uuid', function(){
+        var uuids = clerk.uuids(n, encoding);
+        expect(uuids).to.be.an('array');
+        expect(uuids).to.have.length(n);
+        uuids.forEach(function(uuid){
+          expect(uuid).to.match(
+            encoding === 'base64' ?
+            /[0-9a-z\-_]{22}/i :
+            /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/
+          );
+        });
+      });
+    }
+
+  });
+
   if (fs) describe('package', function(){
 
     before(function(done){
