@@ -1,3 +1,9 @@
+0.3.2 / 2012-05-06
+==================
+
+  * `clerk#uuids()` accepts `nbytes` to use when generating base64 uuids
+
+
 0.3.1 / 2012-05-06
 ==================
 
