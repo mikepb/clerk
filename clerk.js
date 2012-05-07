@@ -136,11 +136,12 @@ Apache License
 
     uri = clerk._parseURI(uri);
 
-    if (db = /^(https?:\/\/[^\/]+).*?(\/[^\/]+)?$/.exec(uri.host)) {
-      uri.host = db[1], db = db[2] && decodeURIComponent(db[2]);
+    if (db = /\/*([^\/]+)\/*$/.exec(uri.path)) {
+      uri.path = uri.path.substr(0, db.index);
+      db = db[1] && decodeURIComponent(db[1]);
     }
 
-    client = new clerk.Client(uri.host, uri);
+    client = new clerk.Client(uri.host + uri.path, uri);
     return db ? client.db(db) : client;
   };
 
@@ -158,9 +159,10 @@ Apache License
     var match;
 
     if (uri) {
-      if (match = /^(https?:\/\/)(?:([^@:]+):([^@]+)@)?([^\/]+)(.*)$/.exec(uri)) {
+      if (match = /^(https?:\/\/)(?:([^@:]+):([^@]+)@)?([^\/]+)(.*)\/*$/.exec(uri)) {
         return {
           host: match[1] + match[4].replace(/\/+/g, '\/').replace(/\/+$/g, ''),
+          path: match[5],
           user: match[2] && decodeURIComponent(match[2]),
           pass: match[3] && decodeURIComponent(match[3])
         };
@@ -726,13 +728,13 @@ Apache License
      * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
      */
 
-    post: function(doc /* [query], [headers], [callback] */) {
+    post: function(docs /* [query], [headers], [callback] */) {
       var request = this._(arguments, 1);
-      if (isArray(doc)) {
+      if (isArray(docs)) {
         request.p = '_bulk_docs';
-        request.b = { docs: doc };
+        request.b = { docs: docs };
       } else {
-        request.b = doc;
+        request.b = docs;
       }
       return request('POST');
     },
@@ -746,9 +748,10 @@ Apache License
      * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#'PUT')
      */
 
-    put: function(/* [doc], [query], [headers], [callback] */) {
+    put: function(/* [id], [doc], [query], [headers], [callback] */) {
       var request = this._(arguments, 0, 1);
       // prevent acidentally creating database
+      if (!request.p) request.p = request.b._id || request.b.id;
       if (!request.p) throw new Error('missing id');
       return request('PUT');
     },

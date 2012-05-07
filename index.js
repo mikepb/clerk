@@ -111,26 +111,23 @@ DB.follow = function(/* [query], [headers], [callback] */) {
  *   @param {String[]} uuids
  */
 
-clerk.uuids = function(count, encoding) {
+clerk.uuids = function(/* [count], [encoding], [nbytes] */) {
   var args = [].slice.call(arguments)
-    , callback = typeof args[args.length - 1] === 'function' && args.pop();
-
-  if (!isNaN(+count)) {
-    count = parseInt(count, 10);
-  } else {
-    encoding = count, count = 1;
-  }
+    , count = isNaN(+args[0]) ? 1 : parseInt(args.shift(), 10)
+    , encoding = '' + args[0] === args[0] && args.shift();
 
   if (encoding !== 'hex' && encoding !== 'base64') encoding = 'hex';
 
-  var len = 16 * count
+  var nbytes = encoding === 'hex' || isNaN(+args[0]) ? 16 : parseInt(args.shift(), 10);
+
+  var len = nbytes * count
     , bytes = crypto.randomBytes(len)
     , uuids = []
     , uuid
     , i;
 
-  for (i = 0; i < len; i += 16) {
-    uuid = bytes.slice(i, i + 16).toString(encoding);
+  for (i = 0; i < len; i += nbytes) {
+    uuid = bytes.slice(i, i + nbytes).toString(encoding);
     switch (encoding) {
       case 'hex':
         uuid = uuid.substr(0, 8) + '-' +

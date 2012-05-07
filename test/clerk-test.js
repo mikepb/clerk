@@ -36,15 +36,21 @@ describe('clerk', function(){
     shouldReturnUUIDs(3, 'base64');
     shouldReturnUUIDs(100, 'base64');
 
-    function shouldReturnUUIDs(n, encoding) {
+    shouldReturnUUIDs(1, 'base64', 32);
+    shouldReturnUUIDs(2, 'base64', 32);
+    shouldReturnUUIDs(3, 'base64', 32);
+    shouldReturnUUIDs(100, 'base64', 32);
+
+    function shouldReturnUUIDs(n, encoding, nbytes) {
+      if (!nbytes) nbytes = 16;
+      var base64re = new RegExp('[0-9a-z\\-_]{' + Math.ceil(nbytes * 8 / 6) + '}', 'i');
       it('shoud return ' + n + ' uuid', function(){
-        var uuids = clerk.uuids(n, encoding);
+        var uuids = clerk.uuids(n, encoding, nbytes);
         expect(uuids).to.be.an('array');
         expect(uuids).to.have.length(n);
         uuids.forEach(function(uuid){
           expect(uuid).to.match(
-            encoding === 'base64' ?
-            /[0-9a-z\-_]{22}/i :
+            encoding === 'base64' ? base64re :
             /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/
           );
         });
