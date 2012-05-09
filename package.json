@@ -20,6 +20,7 @@
     "expect.js": "~0.1.2",
     "express": "~3.0",
     "mocha": "~1.0.0",
+    "uglify-js": "~1.2.6",
     "zombie": "0.13.4"
   },
   "scripts": {
