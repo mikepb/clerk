@@ -137,9 +137,9 @@ clerk.uuids = function(/* [count], [encoding], [nbytes] */) {
                uuid.substr(20);
         break;
       case 'base64':
-        uuid = 'u' + uuid.replace(/[=]+$/, '')
-                         .replace(/\+/g, '-')
-                         .replace(/\//g, '_');
+        uuid = uuid.replace(/[=]+$/, '')
+                   .replace(/\+/g, '-')
+                   .replace(/\//g, '.');
         break;
     }
     uuids.push(uuid);
