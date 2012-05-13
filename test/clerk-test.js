@@ -79,4 +79,26 @@ describe('clerk', function(){
 
   });
 
+  describe('#make', function(){
+
+    it('should make client', function(){
+      var client = clerk.make();
+      expect(client).to.be.a(clerk.Client);
+      expect(client).to.have.property('uri', typeof window == 'undefined' ? '' : 'http://127.0.0.1:9200');
+    });
+
+    it('should make client with URI', function(){
+      var client = clerk.make('http://127.0.0.1:9200');
+      expect(client).to.be.a(clerk.Client);
+      expect(client).to.have.property('uri', 'http://127.0.0.1:9200');
+    });
+
+    it('should make db with URI', function(){
+      var db = clerk.make('http://127.0.0.1:9200/test');
+      expect(db).to.be.a(clerk.DB);
+      expect(db).to.have.property('uri', 'http://127.0.0.1:9200/test');
+    });
+
+  });
+
 });

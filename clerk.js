@@ -169,7 +169,7 @@ Apache License
       }
     }
 
-    return { host: uri || '' };
+    return { host: uri || '', path: '' };
   };
 
   /**
