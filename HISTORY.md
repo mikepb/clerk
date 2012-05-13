@@ -1,3 +1,12 @@
+0.4.0 / 2012-05-12
+==================
+
+  * Fixed URI parsing on node side
+  * UUIDs use '.' instead of '_' to avoid generating IDs starting with '_'
+  * Added uglify-js dependency
+  * Removed useless zombie.js tests
+
+
 0.3.2 / 2012-05-06
 ==================
 
