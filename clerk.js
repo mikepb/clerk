@@ -272,10 +272,8 @@ Apache License
             }
           }
 
-          if (!err) {
-            if (data.error) err = new Error(data.error);
-            else if (data) data = self._response(data);
-          }
+          if (!err && data) data = self._response(data);
+          if (data && data.error) err = new Error(data.error);
 
           callback(err, data, xhr.status, headers, xhr);
         }
