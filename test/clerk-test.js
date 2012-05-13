@@ -1,12 +1,19 @@
 if (typeof require != 'undefined') {
   var clerk = require('..')
     , expect = require('expect.js')
+    , sinon = require('sinon')
     , fs = require('fs');
 }
 
 describe('clerk', function(){
-
   before(clerkFactory);
+
+  it('should delegate to clerk.make()', function(){
+    sinon.spy(clerk, 'make');
+    clerk();
+    expect(clerk.make.calledOnce).to.be.ok();
+    clerk.make.restore();
+  });
 
   if (typeof require != 'undefined') describe('#uuids', function(){
 
