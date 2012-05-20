@@ -11,7 +11,6 @@ Apache License
 ){
 
   var global = this;
-  var previousClerk = this.clerk; this.clerk = clerk;
 
   /**
    * Copy properties from sources to target.
@@ -22,13 +21,13 @@ Apache License
    * @api private
    */
 
-  function extend(target /* sources.. */) {
+  var extend = function(target /* sources.. */) {
     var source, key, i = 1;
     while (source = arguments[i++]) {
       for (key in source) target[key] = source[key];
     }
     return target;
-  }
+  };
 
   /**
    * Stringify value.
@@ -38,9 +37,9 @@ Apache License
    * @api private
    */
 
-  function asString(that) {
+  var asString = function(that) {
     return Object.prototype.toString.call(that);
-  }
+  };
 
   /**
    * Check if value is a string.
@@ -50,9 +49,9 @@ Apache License
    * @api private
    */
 
-  function isString(that) {
+  var isString = function(that) {
     return asString(that) == '[object String]';
-  }
+  };
 
   /**
    * Check if value is an object.
@@ -62,9 +61,9 @@ Apache License
    * @api private
    */
 
-  function isObject(that) {
+  var isObject = function(that) {
     return asString(that) == '[object Object]';
-  }
+  };
 
   /**
    * Check if value is an array.
@@ -74,9 +73,9 @@ Apache License
    * @api private
    */
 
-  function isArray(that) {
+  var isArray = function(that) {
     return asString(that) == '[object Array]';
-  }
+  };
 
   /**
    * Check if value is a function.
@@ -86,9 +85,9 @@ Apache License
    * @api private
    */
 
-  function isFunction(that) {
+  var isFunction = function(that) {
     return asString(that) == '[object Function]';
-  }
+  };
 
   /**
    * Clerk library entry point.
@@ -101,9 +100,9 @@ Apache License
    * @see [Couchbase 2.0](http://www.couchbase.com/docs/couchbase-single-server-2.0/)
    */
 
-  function clerk(uri) {
+  var clerk = function(uri) {
     return clerk.make(uri);
-  }
+  };
 
   /**
    * Restore global variable `clerk` to original value.
@@ -111,6 +110,7 @@ Apache License
    * @return {clerk} The `clerk` library as an object.
    */
 
+  var previousClerk = this.clerk; this.clerk = clerk;
   clerk.noConflict = function() {
     global.clerk = previousClerk;
     return clerk;
