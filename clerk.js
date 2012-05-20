@@ -338,9 +338,11 @@ Apache License
         , proto;
 
       if (hasId || hasRev) {
-        proto = extend(doc.__proto__ = {}, doc);
-        if (hasId) proto._id = doc.id = doc._id || doc.id;
-        if (hasRev) proto._rev = doc.rev = doc._rev || doc.rev;
+        proto = function(){};
+        doc = extend(new proto(), doc);
+        proto = proto.prototype;
+        if (hasId) proto._id = proto.id = doc._id || doc.id;
+        if (hasRev) proto._rev = proto.rev = doc._rev || doc.rev;
       }
 
       return doc;
@@ -683,17 +685,18 @@ Apache License
      */
 
     head: function(/* [id], [query], [headers], callback */) {
-      var request = this._(arguments), callback = request.f
+      var self = this
+        , request = self._(arguments), callback = request.f
         , id = request.p
         , rev;
 
       request.f = function(err, body, status, headers, xhr) {
-        callback(err, err ? body : {
-          _id: id, id: id,
-          _rev: rev = headers.etag && JSON.parse(headers.etag), rev: rev,
+        callback(err, err ? body : self._meta({
+          _id: id,
+          _rev: headers.etag && JSON.parse(headers.etag),
           contentType: headers['content-type'],
           contentLength: headers['content-length']
-        }, status, headers, xhr);
+        }), status, headers, xhr);
       };
 
       return request('HEAD');

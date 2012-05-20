@@ -467,10 +467,11 @@ describe('DB', function(){
   }
 
   function shouldHaveIdRev(body, id, rev) {
-    expect(body.id).to.be(id);
-    expect(body._id).to.be(id);
-    expect(body.rev).to.be(rev);
-    expect(body._rev).to.be(rev);
+    var proto = body.__proto__ || body;
+    expect(proto.id).to.be(id);
+    expect(proto._id).to.be(id);
+    expect(proto.rev).to.be(rev);
+    expect(proto._rev).to.be(rev);
   }
 
   function shouldBeDocument(body, doc) {
