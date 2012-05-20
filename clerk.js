@@ -656,7 +656,7 @@ Apache License
      *   @param {Object} data Response data.
      *   @param {Integer} status Response status code.
      * @return This object for chaining.
-     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#'GET')
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#GET)
      */
 
     get: function(/* [id], [query], [headers], [callback] */) {
@@ -679,7 +679,7 @@ Apache License
      *     @param [result.contentLength] Content length. Only available when
      *       getting metadata for single document.
      * @return This object for chaining.
-     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#'HEAD')
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#HEAD)
      */
 
     head: function(/* [id], [query], [headers], callback */) {
@@ -726,7 +726,7 @@ Apache License
      *   @param {Boolean} [query.all_or_nothing] For batch updating of
      *     documents, use all-or-nothing semantics.
      * @return This object for chaining.
-     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#'POST')
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#POST)
      * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
      */
 
@@ -747,7 +747,7 @@ Apache License
      * @param {Object} doc Document data. Requires `id` and `rev`.
      * @param {String} [options] Options.
      * @return This object for chaining.
-     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#'PUT')
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#PUT)
      */
 
     put: function(/* [id], [doc], [query], [headers], [callback] */) {
@@ -764,7 +764,7 @@ Apache License
      * @param {String} doc Document or document ID.
      * @param {Object} [query] HTTP query options.
      * @return This object for chaining.
-     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#'DELETE')
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#DELETE)
      * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
      */
 
@@ -806,7 +806,7 @@ Apache License
      *     for `target.id`.
      * @param {Object} [query] HTTP query options.
      * @return This object for chaining.
-     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#'COPY')
+     * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#COPY)
      */
 
     copy: function(source, target /* [query], [headers], [callback] */) {
