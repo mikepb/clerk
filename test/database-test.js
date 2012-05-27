@@ -249,21 +249,21 @@ describe('DB', function(){
     describe('#copy', function(){
 
       it('should copy id to id', function(done){
-        shouldCopy.call(this, done, this.doc._id, '1', '1', '1-15f65339921e497348be384867bb940f');
+        shouldCopy.call(this, done, this.doc._id, '1', '1', '1-095d0517d4ee0271cc517163c4e465ff');
       });
 
       it('should copy doc to id', function(done){
-        shouldCopy.call(this, done, this.doc, '1', '1', '1-15f65339921e497348be384867bb940f');
+        shouldCopy.call(this, done, this.doc, '1', '1', '1-095d0517d4ee0271cc517163c4e465ff');
       });
 
       it('should copy doc to doc', function(done){
         var target = { _id: '1' };
-        shouldCopy.call(this, done, this.doc, target, target._id, '1-15f65339921e497348be384867bb940f');
+        shouldCopy.call(this, done, this.doc, target, target._id, '1-095d0517d4ee0271cc517163c4e465ff');
       });
 
       it('should copy doc to doc with rev', function(done){
         var target = { _id: '1', _rev: this.doc._rev };
-        shouldCopy.call(this, done, this.doc, target, target._id, '2-47661acbb62a2a63704c803bc0152f2b');
+        shouldCopy.call(this, done, this.doc, target, target._id, '2-92c76f94974bbbb524cf9e18aedd3572');
       });
 
       function shouldCopy(done, source, target, id, rev) {
@@ -308,6 +308,7 @@ describe('DB', function(){
           if (!err) {
             for (len = body.length; i < len; i++) {
               item = body[i], doc = docs[i];
+              shouldBeOk(item);
               shouldHaveIdRev(item, doc._id, item._rev);
             }
             shouldHave2xxStatus(status);
