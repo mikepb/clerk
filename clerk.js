@@ -828,7 +828,7 @@ Apache License
       // CouchDB older than 1.2 are missing the ok: true property
       // https://issues.apache.org/jira/browse/COUCHDB-903
       request.f = function(err, body) {
-        if (!err && body.rev) body.ok = true;
+        if (!err) body.ok = true;
         callback.apply(this, arguments);
       };
 
