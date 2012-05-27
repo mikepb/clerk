@@ -736,8 +736,22 @@ Apache License
     post: function(docs /* [query], [headers], [callback] */) {
       var request = this._(arguments, 1);
       if (isArray(docs)) {
+        var callback = request.f;
+
         request.p = '_bulk_docs';
         request.b = { docs: docs };
+
+        // CouchDB older than 1.2 are missing the ok: true property
+        request.f = function(err, body) {
+          if (!err) {
+            var i = 0, len = body.length, doc;
+            for (; i < len; i++) {
+              doc = body[i];
+              if (!doc.error) doc.ok = true;
+            }
+          }
+          callback.apply(this, arguments);
+        };
       } else {
         request.b = docs;
       }
@@ -773,8 +787,8 @@ Apache License
 
     del: function(docs /* [query], [headers], [callback] */) {
       if (isArray(docs)) {
-        var i = 0, len, doc;
-        for (len = docs.length; i < len; i++) {
+        var i = 0, len = docs.length, doc;
+        for (; i < len; i++) {
           doc = docs[i], docs[i] = {
             _id: doc._id || doc.id,
             _rev: doc._rev || doc.rev,
