@@ -817,12 +817,21 @@ Apache License
         , sourcePath = encodeURIComponent(source.id || source._id || source)
         , targetPath = encodeURIComponent(target.id || target._id || target)
         , sourceRev = source.rev || source._rev
-        , targetRev = target.rev || target._rev;
+        , targetRev = target.rev || target._rev
+        , callback = request.f;
 
       if (sourceRev) request.q.rev = sourceRev;
       if (targetRev) targetPath += '?rev=' + encodeURIComponent(targetRev);
 
       request.h.Destination = targetPath;
+
+      // CouchDB older than 1.2 are missing the ok: true property
+      // https://issues.apache.org/jira/browse/COUCHDB-903
+      request.f = function(err, body) {
+        if (!err && body.rev) body.ok = true;
+        callback.apply(this, arguments);
+      };
+
       return request('COPY', sourcePath);
     },
 
