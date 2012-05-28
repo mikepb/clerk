@@ -12,6 +12,8 @@ Apache License
 
   var global = this;
 
+  var noop = function(){};
+
   /**
    * Copy properties from sources to target.
    *
@@ -400,10 +402,10 @@ Apache License
         self.request(
           method,
           path || request.p || '',
-          'q' in options ? options.q : request.q,
-          'b' in options ? options.b : request.b,
-          'h' in options ? options.h : request.h,
-          'f' in options ? options.f : request.f
+          options.q || request.q,
+          options.b || request.b,
+          options.h || request.h,
+          options.f || request.f || noop
         );
 
         return self;
@@ -742,7 +744,7 @@ Apache License
         request.b = { docs: docs };
 
         // CouchDB older than 1.2 are missing the ok: true property
-        if (callback) request.f = function(err, body) {
+        request.f = function(err, body) {
           if (!err) {
             var i = 0, len = body.length, doc;
             for (; i < len; i++) {
@@ -841,7 +843,7 @@ Apache License
 
       // CouchDB older than 1.2 are missing the ok: true property
       // https://issues.apache.org/jira/browse/COUCHDB-903
-      if (callback) request.f = function(err, body) {
+      request.f = function(err, body) {
         if (!err) body.ok = true;
         callback.apply(this, arguments);
       };
