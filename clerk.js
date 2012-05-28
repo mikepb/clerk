@@ -12,8 +12,6 @@ Apache License
 
   var global = this;
 
-  var noop = function(){};
-
   /**
    * Copy properties from sources to target.
    *
@@ -202,13 +200,16 @@ Apache License
     request: function(/* [method], [path], [query], [data], [headers], [callback] */) {
       var args = [].slice.call(arguments)
         , callback = isFunction(args[args.length - 1]) && args.pop()
+        , method = args[0] || 'GET'
         , headers = args[4] || {}
         , path = args[1] ? '/' + args[1] : '';
 
       if (!('Content-Type' in headers)) headers['Content-Type'] = 'application/json';
 
+      if (!callback && (method == 'GET' || method == 'HEAD')) return this;
+
       this._request(
-        args[0] || 'GET',                             // method
+        method,                                     // method
         this.uri + path,                            // uri
         args[2],                                    // query
         args[3] && JSON.stringify(args[3],
@@ -258,8 +259,8 @@ Apache License
         }
       }
 
-      xhr.onreadystatechange = function() {
-        if (callback && xhr.readyState === 4) {
+      if (callback) xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
           var headers = self._getHeaders(xhr)
             , data = xhr.responseText
             , err;
@@ -405,7 +406,7 @@ Apache License
           options.q || request.q,
           options.b || request.b,
           options.h || request.h,
-          options.f || request.f || noop
+          options.f || request.f
         );
 
         return self;
@@ -521,6 +522,9 @@ Apache License
 
     log: function(/* [query], [headers], [callback] */) {
       var request = this._(arguments), callback = request.f;
+
+      if (!callback) return this;
+
       request.f = function(e) {
         if (e instanceof SyntaxError) e = null;
         callback.apply(this, arguments);
@@ -639,6 +643,8 @@ Apache License
     exists: function(/* [query], [headers], callback */) {
       var request = this._(arguments), callback = request.f;
 
+      if (!callback) return this;
+
       request.f = function(err, body, status, headers, xhr) {
         callback(err, status === 200, status, headers, xhr);
       };
@@ -692,6 +698,8 @@ Apache License
         , id = request.p
         , rev;
 
+      if (!callback) return this;
+
       request.f = function(err, body, status, headers, xhr) {
         callback(err, err ? body : self._meta({
           _id: id,
@@ -744,7 +752,7 @@ Apache License
         request.b = { docs: docs };
 
         // CouchDB older than 1.2 are missing the ok: true property
-        request.f = function(err, body) {
+        if (callback) request.f = function(err, body) {
           if (!err) {
             var i = 0, len = body.length, doc;
             for (; i < len; i++) {
@@ -843,7 +851,7 @@ Apache License
 
       // CouchDB older than 1.2 are missing the ok: true property
       // https://issues.apache.org/jira/browse/COUCHDB-903
-      request.f = function(err, body) {
+      if (callback) request.f = function(err, body) {
         if (!err) body.ok = true;
         callback.apply(this, arguments);
       };
@@ -975,6 +983,8 @@ Apache License
     follow: function(/* [query], [headers], callback */) {
       var request = this._(arguments)
         , callback = request.f;
+
+      if (!callback) return this;
 
       request.q.feed = 'longpoll';
       request.f = function(err, doc) {

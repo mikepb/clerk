@@ -73,16 +73,14 @@ Base._request = function(method, uri, query, body, headers, auth, callback) {
     headers: headers,
     body: body || '',
     json: true
-  }, function(err, res, data) {
-    if (callback) {
-      if (method === 'HEAD') data = res.headers;
-      else if (!err && data) {
-        if (data.error) err = new Error(data.error);
-        else data = self._response(data);
-      }
-      if (res) status = res.statusCode, headers = res.headers;
-      callback(err, data, status, headers, res);
+  }, callback && function(err, res, data) {
+    if (method === 'HEAD') data = res.headers;
+    else if (!err && data) {
+      if (data.error) err = new Error(data.error);
+      else data = self._response(data);
     }
+    if (res) status = res.statusCode, headers = res.headers;
+    callback(err, data, status, headers, res);
   });
 };
 
@@ -92,6 +90,8 @@ DB.follow = function(/* [query], [headers], [callback] */) {
     , request = self._(arguments)
     , options = request.q
     , feed;
+
+  if (!request.f) return self;
 
   delete options.feed;
   options.db = self.uri;
