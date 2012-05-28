@@ -742,7 +742,7 @@ Apache License
         request.b = { docs: docs };
 
         // CouchDB older than 1.2 are missing the ok: true property
-        request.f = function(err, body) {
+        if (callback) request.f = function(err, body) {
           if (!err) {
             var i = 0, len = body.length, doc;
             for (; i < len; i++) {
@@ -841,7 +841,7 @@ Apache License
 
       // CouchDB older than 1.2 are missing the ok: true property
       // https://issues.apache.org/jira/browse/COUCHDB-903
-      request.f = function(err, body) {
+      if (callback) request.f = function(err, body) {
         if (!err) body.ok = true;
         callback.apply(this, arguments);
       };
