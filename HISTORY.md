@@ -1,3 +1,9 @@
+0.4.2 / 2012-11-04
+==================
+
+  * Define _id, id, _rev, and rev on prototypes to hide from JSON.stringify
+  * Ignore missing callbacks
+
 0.4.1 / 2012-05-19
 ==================
 
