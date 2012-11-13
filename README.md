@@ -1,6 +1,6 @@
 # clerk [![Build Status](https://secure.travis-ci.org/mikepb/clerk.png)](http://travis-ci.org/mikepb/clerk)
 
-CouchDB library for node and the browser
+CouchDB library for node and the browser and sister project to [sage][sage]
 
 ```javascript
 var clerk = require('clerk');
@@ -63,3 +63,4 @@ limitations under the License.
 
 [cors]: http://www.w3.org/TR/cors/
 [mocha]: http://visionmedia.github.com/mocha/
+[sage]: https://github.com/mikepb/sage
