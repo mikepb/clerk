@@ -1,8 +1,16 @@
+0.5.0 / 2012-11-13
+==================
+
+  * Use ~ instead of . for URL-safe base64 IDs to support content-negotiation
+    file extensions over HTTP
+
+
 0.4.2 / 2012-11-04
 ==================
 
   * Define _id, id, _rev, and rev on prototypes to hide from JSON.stringify
   * Ignore missing callbacks
+
 
 0.4.1 / 2012-05-19
 ==================

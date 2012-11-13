@@ -76,7 +76,7 @@ Base._request = function(method, uri, query, body, headers, auth, callback) {
   }, callback && function(err, res, data) {
     if (method === 'HEAD') data = res.headers;
     else if (!err && data) {
-      if (data.error) err = new Error(data.error);
+      if (data.error) err = self._error(data);
       else data = self._response(data);
     }
     if (res) status = res.statusCode, headers = res.headers;
@@ -152,7 +152,7 @@ clerk.uuids = function(/* [count], [encoding], [nbytes] */) {
       case 'base64':
         uuid = uuid.replace(/[=]+$/, '')
                    .replace(/\+/g, '-')
-                   .replace(/\//g, '.');
+                   .replace(/\//g, '~');
         break;
     }
     uuids.push(uuid);

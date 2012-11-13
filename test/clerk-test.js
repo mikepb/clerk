@@ -50,7 +50,7 @@ describe('clerk', function(){
 
     function shouldReturnUUIDs(n, encoding, nbytes) {
       if (!nbytes) nbytes = 16;
-      var base64re = new RegExp('[0-9a-z\\-.]{' + Math.ceil(nbytes * 8 / 6) + '}', 'i');
+      var base64re = new RegExp('[0-9a-z\\-~]{' + Math.ceil(nbytes * 8 / 6) + '}', 'i');
       it('shoud return ' + n + ' uuid', function(){
         var uuids = clerk.uuids(n, encoding, nbytes);
         expect(uuids).to.be.an('array');

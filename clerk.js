@@ -120,7 +120,7 @@ Apache License
    * Library version.
    */
 
-  clerk.version = '0.4.2';
+  clerk.version = '0.5.0';
 
   /**
    * Create single CouchDB client.
@@ -274,7 +274,7 @@ Apache License
               err = e;
             }
             if (!err) {
-              if (data.error) err = new Error(data.error);
+              if (data.error) err = self._error(data);
               else data = self._response(data);
             }
           }
@@ -311,6 +311,18 @@ Apache License
       }
 
       return data;
+    },
+
+    /**
+     * Make an error out of the response.
+     *
+     * @param {Object} json The response JSON.
+     * @return An `Error` object.
+     * @api private
+     */
+
+    _error: function(json) {
+      return extend(new Error(json.error + ': ' + json.reason), json);
     },
 
     /**

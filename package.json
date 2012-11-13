@@ -1,7 +1,7 @@
 {
   "name": "clerk",
   "description": "CouchDB library for Node and the browser",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "author": "Michael Phan-Ba <michael@mikepb.com>",
   "homepage": "https://github.com/mikepb/clerk",
   "repository": {
@@ -10,7 +10,7 @@
   },
   "main": ".",
   "engines": {
-    "node": "~0.6.15"
+    "node": "~0.6.15 ~0.8.14"
   },
   "dependencies": {
     "follow": "~0.7.1",
