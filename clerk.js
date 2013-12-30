@@ -1,4 +1,4 @@
-/*
+/*!
 (c) Michael Phan-Ba
 github.com/mikepb/clerk
 Apache License
@@ -120,7 +120,7 @@ Apache License
    * Library version.
    */
 
-  clerk.version = '0.5.0';
+  clerk.version = '0.5.1';
 
   /**
    * Create single CouchDB client.
