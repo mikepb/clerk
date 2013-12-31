@@ -242,11 +242,19 @@ Apache License
     _request: function(method, uri, query, body, headers, auth, callback) {
       var self = this
         , xhr = new XMLHttpRequest()
-        , qval = [], header, key;
+        , qval = [], header, key, value;
 
       if (query) {
         for (key in query) {
-          qval.push(encodeURIComponent(key) + '=' + encodeURIComponent(query[key]));
+          // ensure query Array values are JSON encoded
+          if (typeof(value = query[key]) === 'object') {
+            value = JSON.stringify(value);
+          }
+          // URI encode
+          key = encodeURIComponent(key);
+          value = encodeURIComponent(value);
+          // add to query kv array
+          qval.push(key + '=' + value);
         }
         uri += '?' + qval.join('&');
       }
@@ -761,7 +769,8 @@ Apache License
         var callback = request.f;
 
         request.p = '_bulk_docs';
-        request.b = { docs: docs };
+        request.b = extend({ docs: docs }, request.q);
+        request.q = null
 
         // CouchDB older than 1.2 are missing the ok: true property
         if (callback) request.f = function(err, body) {

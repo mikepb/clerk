@@ -65,7 +65,16 @@ clerk._parseURI = function(uri) {
 
 // request-based requests
 Base._request = function(method, uri, query, body, headers, auth, callback) {
-  var self = this, status;
+  var self = this
+    , status, key, value;
+
+  // ensure query Array values are JSON encoded
+  for (key in query) {
+    if (typeof(value = query[key]) === 'object') {
+      query[key] = JSON.stringify(value);
+    }
+  }
+
   request({
     method: method,
     uri: uri,
