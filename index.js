@@ -83,6 +83,7 @@ Base._request = function(method, uri, query, body, headers, auth, callback) {
     body: body || '',
     json: true
   }, callback && function(err, res, data) {
+    if (err) return callback(err);
     if (method === 'HEAD') data = res.headers;
     else if (!err && data) {
       if (data.error) err = self._error(data);
