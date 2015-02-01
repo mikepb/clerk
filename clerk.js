@@ -199,55 +199,82 @@ Apache License
 
     request: function(/* [method], [path], [query], [data], [headers], [callback] */) {
       var args = [].slice.call(arguments)
-        , callback = isFunction(args[args.length - 1]) && args.pop()
-        , method = args[0] || 'GET'
-        , headers = args[4] || {}
-        , path = args[1] ? '/' + args[1] : '';
+        , callback = isFunction(args[args.length - 1]) && args.pop();
 
-      if (!('Content-Type' in headers)) headers['Content-Type'] = 'application/json';
+      return this._request({
+        method: args[0],
+        path: args[1],
+        query: args[2],
+        data: args[3],
+        headers: args[4],
+        fn: callback
+      });
+    },
 
-      if (!callback && (method == 'GET' || method == 'HEAD')) return this;
+    /**
+     * Internal service request and parse JSON response handler.
+     *
+     * @param {String} options
+     *   @param {String} method HTTP method.
+     *   @param {String} path HTTP URI.
+     *   @param {Object} query HTTP query options.
+     *   @param {Object} data HTTP body data.
+     *   @param {Object} headers HTTP headers.
+     *   @param {Function} fn Callback function.
+     *     @param {Error|null} error Error or `null` on success.
+     *     @param {Object} data Response data.
+     *     @param {Integer} status Response status code.
+     *     @param {Object} headers Response headers.
+     * @api private
+     */
 
-      this._request(
-        method,                                     // method
-        this.uri + path,                            // uri
-        args[2],                                    // query
-        args[3] && JSON.stringify(args[3],
-          /^\/_design/.test(path) && this._replacer
-        ) || '',                                    // body
-        headers,                                    // headers
-        this.auth || {},                            // auth
-        callback
-      );
+    _request: function(options) {
+      if (!options.method) options.method = 'GET';
+      if (!options.headers) options.headers = {};
+      options.path = options.path ? '/' + options.path : '';
+
+      // set default headers
+      if (!('Content-Type' in options.headers)) {
+        options.headers['Content-Type'] = 'application/json';
+      }
+
+      options.uri = this.uri + options.path;
+      options.body = options.data && JSON.stringify(options.data,
+        /^\/_design/.test(options.path) && this._replacer
+      ) || '';
+      options.auth = this.auth || {};
+
+      this._do(options);
 
       return this;
     },
 
     /**
-     * Service request and parse JSON response. All arguments are required.
+     * Provider for servicing requests and parsing JSON responses.
      *
-     * @param {String} method HTTP method.
-     * @param {String} path HTTP URI.
-     * @param {Object} query HTTP query options.
-     * @param {Object} body HTTP body.
-     * @param {Object} headers HTTP headers.
-     * @param {Function} callback Callback function.
-     *   @param {Error|null} error Error or `null` on success.
-     *   @param {Object} data Response data.
-     *   @param {Integer} status Response status code.
-     *   @param {Object} headers Response headers.
+     * @param {String} options
+     *   @param {String} method HTTP method.
+     *   @param {String} path HTTP URI.
+     *   @param {Object} query HTTP query options.
+     *   @param {Object} body HTTP body.
+     *   @param {Object} headers HTTP headers.
+     *   @param {Function} fn Callback function.
+     *     @param {Error|null} error Error or `null` on success.
+     *     @param {Object} data Response data.
+     *     @param {Integer} status Response status code.
+     *     @param {Object} headers Response headers.
      * @api private
      */
 
-    _request: function(method, uri, query, body, headers, auth, callback) {
+    _do: function(options) {
       var self = this
         , xhr = new XMLHttpRequest()
         , qval = [], header, key, value;
 
-      if (query) {
-        for (key in query) {
+      if (options.query) {
+        for (key in options.query) {
           // ensure query Array values are JSON encoded
-          if (typeof(value = query[key]) === 'object') {
+          if (typeof(value = options.query[key]) === 'object') {
             value = JSON.stringify(value);
           }
           // URI encode
@@ -256,24 +283,25 @@ Apache License
           // add to query kv array
           qval.push(key + '=' + value);
         }
-        uri += '?' + qval.join('&');
+        options.uri += '?' + qval.join('&');
       }
 
-      xhr.open(method, uri, true, auth.user, auth.pass);
+      xhr.open(options.method, options.uri, true,
+        options.auth.user, options.auth.pass);
 
-      if (headers) {
-        for (header in headers) {
-          xhr.setRequestHeader(header, headers[header]);
+      if (options.headers) {
+        for (header in options.headers) {
+          xhr.setRequestHeader(header, options.headers[header]);
         }
       }
 
-      if (callback) xhr.onreadystatechange = function() {
+      if (options.fn) xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
           var headers = self._getHeaders(xhr)
             , data = xhr.responseText
             , err;
 
-          if (method == 'HEAD') {
+          if (options.method == 'HEAD') {
             data = headers;
           } else if (data) {
             try {
@@ -287,11 +315,11 @@ Apache License
             }
           }
 
-          callback(err, data, xhr.status, headers, xhr);
+          options.fn(err, data, xhr.status, headers, xhr);
         }
       };
 
-      xhr.send(body);
+      xhr.send(options.body);
     },
 
     /**
@@ -419,21 +447,19 @@ Apache License
 
       function request(method, path, options) {
         if (!options) options = {};
-
-        self.request(
-          method,
-          path || request.p || '',
-          options.q || request.q,
-          options.b || request.b,
-          options.h || request.h,
-          options.f || request.f
-        );
-
-        return self;
+        return self._request({
+          method: method,
+          path: path || request.p,
+          query: options.q || request.q,
+          data: options.b || request.b,
+          headers: options.h || request.h,
+          fn: options.f || request.f,
+          state: request
+        });
       }
 
       // [id], [doc], [query], [header], [callback]
-      args = [].slice.call(args, start);
+      args = [].slice.call(args, start || 0);
 
       request.f = isFunction(args[args.length - 1]) && args.pop();
       request.p = isString(args[0]) && encodeURI(args.shift());

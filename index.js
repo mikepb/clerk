@@ -64,27 +64,27 @@ clerk._parseURI = function(uri) {
 };
 
 // request-based requests
-Base._request = function(method, uri, query, body, headers, auth, callback) {
+Base._do = function(options) {
   var self = this
-    , status, key, value;
+    , key, value;
 
   // ensure query Array values are JSON encoded
-  for (key in query) {
-    if (typeof(value = query[key]) === 'object') {
-      query[key] = JSON.stringify(value);
+  for (key in options.query) {
+    if (typeof(value = options.query[key]) === 'object') {
+      options.query[key] = JSON.stringify(value);
     }
   }
 
   request({
-    method: method,
-    uri: uri,
-    qs: query,
-    headers: headers,
-    body: body || '',
+    method: options.method,
+    uri: options.uri,
+    qs: options.query,
+    headers: options.headers,
+    body: options.body || '',
     json: false
-  }, callback && function(err, res, data) {
-    if (err) return callback(err);
-    if (method == 'HEAD') {
+  }, options.fn && function(err, res, data) {
+    if (err) return options.fn(err);
+    if (options.method == 'HEAD') {
       data = res.headers;
     } else if (!err && data && data.error) {
       err = self._error(data);
@@ -98,8 +98,11 @@ Base._request = function(method, uri, query, body, headers, auth, callback) {
         data = self._response(data);
       }
     }
+
+    var status, headers;
     if (res) status = res.statusCode, headers = res.headers;
-    callback(err, data, status, headers, res);
+
+    options.fn(err, data, status, headers, res);
   });
 };
 
