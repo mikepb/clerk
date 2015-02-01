@@ -120,7 +120,7 @@ Apache License
    * Library version.
    */
 
-  clerk.version = '0.6.0-devel';
+  clerk.version = '0.6.0';
 
   /**
    * Create single CouchDB client.
