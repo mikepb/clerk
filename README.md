@@ -47,7 +47,7 @@ missing from *clerk* or you need to access more advanced features, the
 
 ## License
 
-Copyright 2012 Michael Phan-Ba
+Copyright 2012-2015 Michael Phan-Ba <michael@mikepb.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
