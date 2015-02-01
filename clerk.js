@@ -323,7 +323,7 @@ Apache License
     },
 
     /**
-     * Coerce response to normalize access to `id` and `rev`.
+     * Coerce response to normalize access to `_id` and `_rev`.
      *
      * @param {Object} json The response JSON.
      * @return The coerced JSON.
@@ -375,7 +375,7 @@ Apache License
     },
 
     /**
-     * Coerce documents with prototypical `id`, `_id`, `rev`, and `_rev`
+     * Coerce documents with prototypical `_id` and `_rev`
      * values.
      *
      * @param {Object} doc The document to coerce.
@@ -392,8 +392,8 @@ Apache License
         proto = function(){};
         doc = extend(new proto(), doc);
         proto = proto.prototype;
-        if (hasId) proto._id = proto.id = doc._id || doc.id;
-        if (hasRev) proto._rev = proto.rev = doc._rev || doc.rev;
+        if (hasId) proto._id = doc._id || doc.id;
+        if (hasRev) proto._rev = doc._rev || doc.rev;
       }
 
       return doc;

@@ -273,7 +273,6 @@ describe('DB', function(){
             // CouchDB 1.2 changes the rev on COPY
             // https://issues.apache.org/jira/browse/COUCHDB-1485
             var proto = body.__proto__ || body;
-            expect(proto.id).to.be(id);
             expect(proto._id).to.be(id);
             // shouldHaveIdRev(body, id, rev);
             shouldHave2xxStatus(status);
@@ -483,9 +482,7 @@ describe('DB', function(){
 
   function shouldHaveIdRev(body, id, rev) {
     var proto = body.__proto__ || body;
-    expect(proto.id).to.be(id);
     expect(proto._id).to.be(id);
-    expect(proto.rev).to.be(rev);
     expect(proto._rev).to.be(rev);
   }
 
