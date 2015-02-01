@@ -151,7 +151,7 @@ describe('Client', function(){
     describe('changing config value', function(){
 
       beforeEach(function(done){
-        this.client.config('uuids/algorithm', 'sequential', function(err, body, status, headers, res){
+        this.client.config('log/level', 'debug', function(err, body, status, headers, res){
           if (!err) {
             shouldHave2xxStatus(status);
           }
@@ -160,9 +160,9 @@ describe('Client', function(){
       });
 
       beforeEach(function(done){
-        this.client.config('uuids/algorithm', function(err, body, status, headers, res){
+        this.client.config('log/level', function(err, body, status, headers, res){
           if (!err) {
-            expect(body).to.be('sequential');
+            expect(body).to.be('debug');
             shouldHave2xxStatus(status);
           }
           done(err);
@@ -170,9 +170,8 @@ describe('Client', function(){
       });
 
       afterEach(function(done){
-        this.client.config('uuids/algorithm', function(err, body, status, headers, res){
+        this.client.config('log/level', 'error', function(err, body, status, headers, res){
           if (!err) {
-            expect(body).to.be('utc_random');
             shouldHave2xxStatus(status);
           }
           done(err);
@@ -180,8 +179,9 @@ describe('Client', function(){
       });
 
       afterEach(function(done){
-        this.client.config('uuids/algorithm', 'sequential', function(err, body, status, headers, res){
+        this.client.config('log/level', function(err, body, status, headers, res){
           if (!err) {
+            expect(body).to.be('error');
             shouldHave2xxStatus(status);
           }
           done(err);
@@ -189,7 +189,7 @@ describe('Client', function(){
       });
 
       it('shoud set server config value', function(done){
-        this.client.config('uuids/algorithm', 'utc_random', function(err, body, status, headers, res){
+        this.client.config('log/level', 'debug', function(err, body, status, headers, res){
           if (!err) {
             shouldHave2xxStatus(status);
           }

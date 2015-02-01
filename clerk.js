@@ -574,8 +574,9 @@ Apache License
     config: function(/* [key], [value], [query], [headers], [callback] */) {
       var args = [].slice.call(arguments)
         , key = isString(args[0]) && args.shift() || ''
-        , value = isString(args[0]) && args.shift();
-      return this._(args)(value ? 'PUT' : 'GET', '_config/' + key, { b: value });
+        , value = isString(args[0]) && args.shift()
+        , method = isString(value) ? 'PUT' : 'GET';
+      return this._(args)(method, '_config/' + key, { b: value });
     },
 
     /**

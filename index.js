@@ -81,13 +81,22 @@ Base._request = function(method, uri, query, body, headers, auth, callback) {
     qs: query,
     headers: headers,
     body: body || '',
-    json: true
+    json: false
   }, callback && function(err, res, data) {
     if (err) return callback(err);
-    if (method === 'HEAD') data = res.headers;
-    else if (!err && data) {
-      if (data.error) err = self._error(data);
-      else data = self._response(data);
+    if (method == 'HEAD') {
+      data = res.headers;
+    } else if (!err && data && data.error) {
+      err = self._error(data);
+    } else {
+      try {
+        data = JSON.parse(data);
+      } catch (e) {
+        err = e;
+      }
+      if (!err) {
+        data = self._response(data);
+      }
     }
     if (res) status = res.statusCode, headers = res.headers;
     callback(err, data, status, headers, res);

@@ -287,6 +287,7 @@ describe('DB', function(){
   });
 
   describe('batch', function(){
+    before(docFactory);
     beforeEach(createDB);
     afterEach(destroyDB);
 
