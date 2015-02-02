@@ -1,3 +1,16 @@
+0.6.1 / 2015-02-01
+==================
+  
+  * Only set prototypical _id and _rev
+
+
+0.6.0 / 2015-02-01
+==================
+
+  * Update dependencies
+  * Test against CouchDB 1.6.1
+
+
 0.5.3 / 2014-01-04
 ==================
 
