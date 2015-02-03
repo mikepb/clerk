@@ -7,7 +7,7 @@ var clerk = require('clerk');
 
 var client = clerk('http://127.0.0.1:5984');
 
-var db = client.database('test');
+var db = client.db('test');
 
 db.info(function(err, info) {
   console.dir(err || info);
@@ -62,5 +62,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 [cors]: http://www.w3.org/TR/cors/
-[mocha]: http://visionmedia.github.com/mocha/
+[mocha]: http://mochajs.org/
 [sage]: https://github.com/mikepb/sage
