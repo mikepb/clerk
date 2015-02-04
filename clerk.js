@@ -215,8 +215,7 @@ clerk.make = function (uri) {
 /**
  * Parse URI.
  *
- * The URI is normalized by removing extra `//` in the path and extracting
- * the authentication component, if present.
+ * The URI is normalized by removing extra `//` in the path.
  *
  * @param {String} uri Fully qualified URI.
  * @return {String} The normalized URI.
@@ -259,7 +258,7 @@ clerk.Base.prototype = {
    *   @param {Object} data Response data.
    *   @param {Integer} status Response status code.
    *   @param {Object} headers Response headers.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    */
 
   request: function (/* [method], [path], [query], [data], [headers], [callback] */) {
@@ -313,8 +312,6 @@ clerk.Base.prototype = {
       /^\/_design/.test(options.path) && this._replacer
     ) || "";
 
-    if (options.auth == null) options.auth = this.auth;
-
     // return promise if no callback given
     if (!options.fn && clerk.Promise) {
       promise = clerk.Promise.defer();
@@ -340,7 +337,7 @@ clerk.Base.prototype = {
 
     this._do(options);
 
-    return promise ? promise.promise : this;
+    return promise;
   },
 
   /**
@@ -506,7 +503,7 @@ clerk.Base.prototype = {
    * @param {Integer} start The index from which to start reading arguments.
    * @param {Boolean} withDoc Set to `true` if the doc source is given as a
    *   parameter before HTTP query options.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @api private
    */
 
@@ -550,9 +547,6 @@ clerk.Base.prototype = {
  * Clerk CouchDB client.
  *
  * @param {String} uri Fully qualified URI.
- * @param {Object} [auth] Authentication options.
- *   @param {String} [auth.user] Username.
- *   @param {String} [auth.pass] Password.
  * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Complete_HTTP_API_Reference)
  */
 
@@ -572,13 +566,13 @@ clerk.Client.prototype = extend(new clerk.Base(), {
 
   db: function (name) {
     var db = this._db;
-    return db[name] || (db[name] = new clerk.DB(this, name, this.auth));
+    return db[name] || (db[name] = new clerk.DB(this, name));
   },
 
   /**
    * List all databases.
    *
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetAllDbs)
    */
 
@@ -590,7 +584,7 @@ clerk.Client.prototype = extend(new clerk.Base(), {
    * Get UUIDs.
    *
    * @param {Integer} [count=1] Number of UUIDs to get.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetUuids)
    */
 
@@ -603,7 +597,7 @@ clerk.Client.prototype = extend(new clerk.Base(), {
   /**
    * Get server information.
    *
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetRoot)
    */
 
@@ -614,7 +608,7 @@ clerk.Client.prototype = extend(new clerk.Base(), {
   /**
    * Get server stats.
    *
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetLog)
    */
 
@@ -629,7 +623,7 @@ clerk.Client.prototype = extend(new clerk.Base(), {
    *   @param {Integer} [query.bytes=1000] Number of bytes to read.
    *   @param {Integer} [query.offset=0] Number of bytes from the end of
    *     log file to start reading.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetLog)
    */
 
@@ -648,7 +642,7 @@ clerk.Client.prototype = extend(new clerk.Base(), {
   /**
    * List running tasks.
    *
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetActiveTasks)
    */
 
@@ -661,7 +655,7 @@ clerk.Client.prototype = extend(new clerk.Base(), {
    *
    * @param {String} [key] Configuration section or key.
    * @param {String} [value] Configuration value.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    */
 
   config: function (/* [key], [value], [query], [headers], [callback] */) {
@@ -688,7 +682,7 @@ clerk.Client.prototype = extend(new clerk.Base(), {
    *   @param {Object} [options.query] Query parameters for filter.
    *   @param {String[]} [options.doc_ids] Document IDs to replicate.
    *   @param {String} [options.proxy] Proxy through which to replicate.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Replication)
    */
 
@@ -703,17 +697,13 @@ clerk.Client.prototype = extend(new clerk.Base(), {
  *
  * @param {Client} client Clerk client.
  * @param {String} name DB name.
- * @param {Object} [auth] Authentication options.
- *   @param {String} [auth.user] Username.
- *   @param {String} [auth.pass] Password.
  * @return This object for chaining.
  */
 
-clerk.DB = function (client, name, auth) {
+clerk.DB = function (client, name) {
   this.client = client;
   this.name = name;
   this.uri = client.uri + "/" + encodeURIComponent(name);
-  this.auth = auth;
 };
 
 clerk.DB.prototype = extend(new clerk.Base(), {
@@ -721,7 +711,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   /**
    * Create database.
    *
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    */
 
   create: function (/* [query], [headers], [callback] */) {
@@ -731,7 +721,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   /**
    * Destroy database.
    *
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    */
 
   destroy: function (/* [query], [headers], [callback] */) {
@@ -741,7 +731,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   /**
    * Get database info.
    *
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    */
 
   info: function (/* [query], [headers], callback */) {
@@ -751,7 +741,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   /**
    * Check if database exists.
    *
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    */
 
   exists: function (/* [query], [headers], callback */) {
@@ -779,7 +769,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *   @param {Error|null} error Error or `null` on success.
    *   @param {Object} data Response data.
    *   @param {Integer} status Response status code.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#GET)
    */
 
@@ -802,7 +792,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *       getting metadata for single document.
    *     @param [result.contentLength] Content length. Only available when
    *       getting metadata for single document.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#HEAD)
    */
 
@@ -851,7 +841,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *     increasing the chances of write failure.
    *   @param {Boolean} [query.all_or_nothing] For batch updating of
    *     documents, use all-or-nothing semantics.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#POST)
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
    */
@@ -887,7 +877,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *
    * @param {Object} doc Document data. Requires `id` and `rev`.
    * @param {String} [options] Options.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#PUT)
    */
 
@@ -904,7 +894,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *
    * @param {String} doc Document or document ID.
    * @param {Object} [query] HTTP query options.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#DELETE)
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
    */
@@ -946,7 +936,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *   @param {String} [target._rev] Target document revision. Alternate key
    *     for `target.id`.
    * @param {Object} [query] HTTP query options.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#COPY)
    */
 
@@ -992,7 +982,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *     in results.
    *   @param {Boolean} [query.update_seq=false] Include sequence value
    *     of the database corresponding to the view.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
    */
 
@@ -1033,7 +1023,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *     in results.
    *   @param {Boolean} [query.update_seq=false] Include sequence value
    *     of the database corresponding to the view.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_view_API)
    */
 
@@ -1078,7 +1068,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *     which an empty line is sent. Applicable only to feed types
    *     `longpoll` and `continuous`. Overrides `query.timeout` to keep the
    *     feed alive indefinitely.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_database_API#Changes)
    */
 
@@ -1132,7 +1122,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    * @param {Object} [query] HTTP query options.
    * @param {Object|String} [data] Data.
    * @param {Object} [headers] Headers.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Document_Update_Handlers)
    */
 
@@ -1155,7 +1145,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    * @param {Object|String} docOrId Document or document ID.
    * @param {String} attachmentName Attachment name.
    * @param {Object} [query] HTTP query options.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    */
 
   attachment: function (doc, attachmentName /* [query], [headers], [callback] */) {
@@ -1173,7 +1163,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *   here or in `query`.
    * @param {String} attachmentName Attachment name.
    * @param {Object} data Data.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    */
 
   attach: function (doc, attachmentName, data /* [query], [headers], [callback] */) {
@@ -1197,7 +1187,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *     local name. Defaults to the selected database name if not given.
    *   @param {String} [options.target=this.name] Target database URL or
    *     local name. Defaults to the selected database name if not given.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    */
 
   replicate: function (options /* [query], [headers], [callback] */) {
@@ -1209,7 +1199,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   /**
    * Ensure recent changes are committed to disk.
    *
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    */
 
   commit: function (/* [query], [headers], [callback] */) {
@@ -1220,7 +1210,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    * Purge deleted documents from database.
    *
    * @param {Object} revs Map of document IDs to revisions to be purged.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    */
 
   purge: function (revs /* [query], [headers], [callback] */) {
@@ -1231,7 +1221,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    * Compact database or design.
    *
    * @param {String} [design] Design name if compacting design indexes.
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Compaction)
    */
 
@@ -1243,7 +1233,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   /**
    * Remove unused views.
    *
-   * @return This object for chaining.
+   * @return {Promise} If no callback is provided, a Promise is returned.
    * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Compaction)
    */
 
