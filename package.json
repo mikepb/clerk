@@ -30,7 +30,7 @@
     "webpack": "*"
   },
   "scripts": {
-    "test": "mocha --reporter dot --require test/shared",
+    "test": "mocha --reporter dot",
     "dist": "webpack lib/clerk.js clerk.js && webpack --optimize-minimize lib/clerk.js clerk.min.js",
     "karma": "karma start --single-run --browsers Chrome && karma start --single-run --browsers Firefox"
   }

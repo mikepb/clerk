@@ -46,8 +46,10 @@ To run tests in node:
 $ npm test
 ```
 
-To run tests with Karma, make sure that you have
-[enabled cors in CouchDB][couchdb_cors]:
+To run tests with Karma, make sure that you have [enabled cors in
+CouchDB][couchdb_cors]. By default, CouchDB does not allow the `Authorization`
+header, so if you will be authenticating, you'll need to add it to the list as
+well.
 
 ```
 [httpd]
@@ -56,6 +58,7 @@ enable_cors = true
 [cors]
 credentials = true
 origins = *
+headers = Accept, Accept-Language, Authorization, Content-Type, Expires, Last-Modified, Pragma, Origin, Content-Length, If-Match, Destination, X-Requested-With, X-Http-Method-Override, Content-Range
 ```
 
 Then, you may run Karma:
@@ -94,7 +97,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 [cors]: http://www.w3.org/TR/cors/
-[couchdb_cors]: http://stackoverflow.com/questions/12689629
+[couchdb_cors]: http://docs.couchdb.org/en/latest/config/http.html#cross-origin-resource-sharing
 [karma]: http://karma-runner.github.io
 [mocha]: http://mochajs.org
 [sage]: https://github.com/mikepb/sage
