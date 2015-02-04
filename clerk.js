@@ -183,6 +183,12 @@ clerk.version = "0.7.0-devel";
 clerk.defaultHost = "http://127.0.0.1:5984";
 
 /**
+ * Promise implementation.
+ */
+
+clerk.Promise = typeof Promise != "undefined" && Promise;
+
+/**
  * Create single CouchDB client.
  *
  * @param {String} uri Fully qualified URI.
@@ -288,6 +294,8 @@ clerk.Base.prototype = {
    */
 
   _request: function (options) {
+    var promise;
+
     if (!options.method) options.method = "GET";
     if (!options.headers) options.headers = {};
     options.path = options.path ? "/" + options.path : "";
@@ -307,9 +315,32 @@ clerk.Base.prototype = {
 
     if (options.auth == null) options.auth = this.auth;
 
+    // return promise if no callback given
+    if (!options.fn && clerk.Promise) {
+      promise = clerk.Promise.defer();
+      options.fn = function (err, data, status, headers, res) {
+        if (err) {
+          err.body = data;
+          err.status = status;
+          err.headers = headers;
+          err.res = res;
+          promise.reject(err);
+        } else {
+          if (Object.defineProperties) {
+            Object.defineProperties(data, {
+              _status: { value: status },
+              _headers: { value: headers },
+              _response: { value: res },
+            });
+          }
+          promise.resolve(data);
+        }
+      };
+    }
+
     this._do(options);
 
-    return this;
+    return promise ? promise.promise : this;
   },
 
   /**
@@ -1065,18 +1096,19 @@ clerk.DB.prototype = extend(new clerk.Base(), {
 
   follow: function (/* [query], [headers], callback */) {
     var request = this._(arguments)
-      , callback = request.f;
+      , fn = request.f;
 
-    if (!callback) return this;
+    if (!fn) return this;
 
     request.q.feed = "longpoll";
-    request.f = function (err, doc) {
-      var body = doc, i = 0, len = doc.length, stop;
-      for (; i < len; i++) {
-        doc = body[i];
-        if (stop = callback.apply(this, arguments) === false || err) break;
+    request.f = function (err, body) {
+      var args = [].slice.call(arguments);
+      var done, i;
+      for (i = 0; i < body.length; i++) {
+        args[1] = body[i];
+        if (done = fn.apply(this, args) === false || err) break;
       }
-      if (!stop) this._changes(request);
+      if (!done) this._changes(request);
     };
 
     return this._changes(request);
