@@ -45,9 +45,11 @@ this["clerk"] =
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
+"use strict";
+
 /*!
 
-Clerk - CouchDB client for node and the browser.
+clerk - CouchDB client for node and the browser.
 Copyright 2012-2015 Michael Phan-Ba
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -330,6 +332,9 @@ clerk.Base.prototype = {
 
   _do: function (options) {
     var self = this;
+    var key, value;
+
+    // create request
     var req = request(options.method, options.uri);
 
     // query string

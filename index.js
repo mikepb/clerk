@@ -1,6 +1,6 @@
 /*!
 
-Clerk - CouchDB client for node and the browser.
+clerk - CouchDB client for node and the browser.
 Copyright 2012-2015 Michael Phan-Ba
 
 Licensed under the Apache License, Version 2.0 (the "License");
