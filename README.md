@@ -2,7 +2,7 @@
 
 CouchDB library for node and the browser and sister project to [sage][]
 
-```javascript
+```js
 var clerk = require('clerk');
 
 var client = clerk('http://127.0.0.1:5984');
@@ -16,7 +16,7 @@ db.info(function(err, info) {
 
 ## Installation
 
-```bash
+```sh
 $ npm install clerk
 ```
 
@@ -24,13 +24,45 @@ $ npm install clerk
 
 Browser support is provided by [superagent][]. `clerk.js` and `clerk.min.js`
 are the browser and minified browser versions of the library. Modern browsers
-are generally supported, but not widely tested. The `test/index.html` and 
-`test/index-min.html` run the [mocha][] tests in the browser.
+are generally supported, but not widely tested. [Karma][karma] is used to 
+run the [mocha][] tests in the browser.
 
 Security restrictions on cross-domain requests currently limits the usefulness
 of the browser version. Using a local proxy or configuring [Cross-Origin
-Resource Sharing][cors] on a proxy in front of CouchDB may allow you to use
-the library in the browser.
+Resource Sharing][cors] in CouchDB may allow you to use the library in the
+browser.
+
+To build the client files:
+
+```sh
+$ npm run dist
+```
+
+## Testing
+
+To run tests in node:
+
+```sh
+$ npm test
+```
+
+To run tests with Karma, make sure that you have
+[enabled cors in CouchDB][couchdb_cors]:
+
+```
+[httpd]
+enable_cors = true
+
+[cors]
+credentials = true
+origins = *
+```
+
+Then, you may run Karma:
+
+```sh
+$ npm run karma
+```
 
 ## Philosophy
 
@@ -47,13 +79,13 @@ missing from *clerk* or you need to access more advanced features, the
 
 ## License
 
-Copyright 2012-2015 Michael Phan-Ba <michael@mikepb.com>
+Copyright 2012-2015 Michael Phan-Ba &lt;michael@mikepb.com&gt;
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-<http://www.apache.org/licenses/LICENSE-2.0>
+&lt;http://www.apache.org/licenses/LICENSE-2.0&gt;
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -62,6 +94,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 [cors]: http://www.w3.org/TR/cors/
-[mocha]: http://mochajs.org/
+[couchdb_cors]: http://stackoverflow.com/questions/12689629
+[karma]: http://karma-runner.github.io
+[mocha]: http://mochajs.org
 [sage]: https://github.com/mikepb/sage
 [superagent]: https://github.com/visionmedia/superagent

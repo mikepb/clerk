@@ -18,13 +18,20 @@
   },
   "devDependencies": {
     "expect.js": "*",
+    "karma": "*",
+    "karma-chrome-launcher": "*",
+    "karma-firefox-launcher": "*",
+    "karma-mocha": "*",
+    "karma-sinon": "*",
+    "karma-webpack": "*",
     "mocha": "*",
     "sinon": "*",
     "uglify-js": "*",
-    "webpack": "^1.5.3"
+    "webpack": "*"
   },
   "scripts": {
     "test": "mocha --reporter dot --require test/shared",
-    "dist": "webpack lib/clerk.js clerk.js && webpack --optimize-minimize lib/clerk.js clerk.min.js"
+    "dist": "webpack lib/clerk.js clerk.js && webpack --optimize-minimize lib/clerk.js clerk.min.js",
+    "karma": "karma start --single-run --browsers Chrome && karma start --single-run --browsers Firefox"
   }
 }

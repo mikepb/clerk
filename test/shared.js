@@ -1,43 +1,47 @@
-if (typeof require != 'undefined') {
-  var clerk = require('../index')
-    , expect = require('expect.js');
-}
+"use strict";
 
-(function(){
+var browser = typeof window != "undefined";
 
-  this.clerkFactory = function() {
-    this.client = clerk('http://127.0.0.1:5984');
-    this.db = this.client.db('clerk-test');
+var clerk = require(browser ? "../lib/clerk" : "../index");
+var expect = require("expect.js");
+
+exports.clerkFactory = function () {
+  this.client = clerk("http://127.0.0.1:5984");
+  this.db = this.client.db("clerk-test");
+};
+
+exports.docFactory = function () {
+  this.doc = {
+    _id: "0",
+    hello: "world"
   };
-
-  this.docFactory = function() {
-    this.doc = { _id: '0', hello: 'world' };
-    this.docs = [];
-    for (var i = 1; i < 10; i++) {
-      this.docs.push({ _id: '' + i, hello: 'world' + i });
-    }
-  };
-
-  this.forceDestroyDB = function(done) {
-    this.db.destroy(function(){
-      done();
+  this.docs = [];
+  for (var i = 1; i < 10; i++) {
+    this.docs.push({
+      _id: "" + i,
+      hello: "world" + i
     });
-  };
+  }
+};
 
-  this.createDB = function(done){
-    this.db.create(done);
-  };
+exports.forceDestroyDB = function (done) {
+  this.db.destroy(function () {
+    done();
+  });
+};
 
-  this.destroyDB = function(done){
-    this.db.destroy(done);
-  };
+exports.createDB = function (done) {
+  this.db.create(done);
+};
 
-  this.shouldBeOk = function(body) {
-    expect(body).to.have.property('ok', true);
-  };
+exports.destroyDB = function (done) {
+  this.db.destroy(done);
+};
 
-  this.shouldHave2xxStatus = function(status) {
-    expect(status).to.be.within(200, 299);
-  };
+exports.shouldBeOk = function (body) {
+  expect(body).to.have.property("ok", true);
+};
 
-})();
+exports.shouldHave2xxStatus = function (status) {
+  expect(status).to.be.within(200, 299);
+};

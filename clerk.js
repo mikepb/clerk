@@ -393,8 +393,7 @@ clerk.Base.prototype = {
       var data;
 
       if (!err) {
-        data = /^head$/i.test(options.method) ? res.header : res.body;
-        if (!data) data = res.text;
+        if (!(data = res.body || res.text)) {}
         else if (data.error) err = self._error(data);
         else data = self._response(data);
       }
@@ -749,8 +748,8 @@ clerk.DB.prototype = extend(new clerk.Base(), {
 
     if (!callback) return this;
 
-    request.f = function (err, body, status, headers, xhr) {
-      callback(err, status === 200, status, headers, xhr);
+    request.f = function (err, body, status, headers, req) {
+      callback(err, status === 200, status, headers, req);
     };
 
     return request("HEAD");
@@ -803,13 +802,13 @@ clerk.DB.prototype = extend(new clerk.Base(), {
 
     if (!callback) return this;
 
-    request.f = function (err, body, status, headers, xhr) {
-      callback(err, err ? body : self._meta({
+    request.f = function (err, body, status, headers, res) {
+      callback(err, err ? null : self._meta({
         _id: id,
         _rev: headers.etag && JSON.parse(headers.etag),
         contentType: headers["content-type"],
         contentLength: headers["content-length"]
-      }), status, headers, xhr);
+      }), status, headers, res);
     };
 
     return request("HEAD");
