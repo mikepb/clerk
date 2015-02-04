@@ -1,28 +1,30 @@
 {
   "name": "clerk",
   "description": "CouchDB library for Node and the browser",
-  "version": "0.6.1",
+  "version": "0.7.0-devel",
   "author": "Michael Phan-Ba <michael@mikepb.com>",
   "homepage": "https://github.com/mikepb/clerk",
   "repository": {
     "type": "git",
     "url": "git://github.com/mikepb/clerk.git"
   },
-  "main": ".",
+  "main": "./index.js",
   "engines": {
     "node": "^0.10.0"
   },
   "dependencies": {
     "follow": "^0.10.4",
-    "request": "^2.51.0"
+    "superagent": "^0.21.0"
   },
   "devDependencies": {
     "expect.js": "*",
     "mocha": "*",
     "sinon": "*",
-    "uglify-js": "*"
+    "uglify-js": "*",
+    "webpack": "^1.5.3"
   },
   "scripts": {
-    "test": "make test"
+    "test": "mocha --reporter dot --require test/shared",
+    "dist": "webpack lib/clerk.js clerk.js && webpack --optimize-minimize lib/clerk.js clerk.min.js"
   }
 }

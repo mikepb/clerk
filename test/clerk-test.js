@@ -91,7 +91,7 @@ describe('clerk', function(){
     it('should make client', function(){
       var client = clerk.make();
       expect(client).to.be.a(clerk.Client);
-      expect(client).to.have.property('uri', typeof require != 'undefined' ? 'http://127.0.0.1:5984' : '');
+      expect(client).to.have.property('uri', 'http://127.0.0.1:5984');
     });
 
     it('should make client with URI', function(){

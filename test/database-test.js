@@ -481,9 +481,8 @@ describe('DB', function(){
   }
 
   function shouldHaveIdRev(body, id, rev) {
-    var proto = body.__proto__ || body;
-    expect(proto._id).to.be(id);
-    expect(proto._rev).to.be(rev);
+    expect(body._id).to.be(id);
+    expect(body._rev).to.be(rev);
   }
 
   function shouldBeDocument(body, doc) {

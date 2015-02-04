@@ -1,19 +1,19 @@
 /*!
 
-    Clerk CouchDB for node and the browser.
-    Copyright 2012 Michael Phan-Ba
+Clerk - CouchDB client for node and the browser.
+Copyright 2012-2015 Michael Phan-Ba
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-        http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 
 */
 
@@ -21,90 +21,15 @@
  * Module dependencies.
  */
 
-var crypto = require('crypto')
-  , request = require('request')
-  , follow = require('follow');
-
-/**
- * Clerk library.
- */
-
-require('./clerk');
-var clerk = module.exports = global.clerk.noConflict();
+var clerk = require('./lib/clerk');
+var crypto = require('crypto');
+var follow = require('follow');
 
 /**
  * Patchable prototypes.
  */
 
-var Base = clerk.Base.prototype
-  , DB = clerk.DB.prototype;
-
-/**
- * Remove irrelevant methods.
- */
-
-delete clerk.noConflict;
-delete Base._headers;
-delete Base._getHeaders;
-
-// auth uris are automatically handled
-clerk._parseURI = function(uri) {
-  var match;
-
-  if (uri) {
-    if (match = /^(https?:\/\/[^\/]*)(\/.*)\/*$/.exec(uri)) {
-      return {
-        host: match[1],
-        path: match[2].replace(/\/+/g, '\/')
-      };
-    }
-  }
-
-  return { host: uri || 'http://127.0.0.1:5984', path: '' };
-};
-
-// request-based requests
-Base._do = function(options) {
-  var self = this
-    , key, value;
-
-  // ensure query Array values are JSON encoded
-  for (key in options.query) {
-    if (typeof(value = options.query[key]) === 'object') {
-      options.query[key] = JSON.stringify(value);
-    }
-  }
-
-  request({
-    method: options.method,
-    uri: options.uri,
-    qs: options.query,
-    headers: options.headers,
-    body: options.body || '',
-    json: false
-  }, options.fn && function(err, res, data) {
-    if (err) return options.fn(err);
-    if (options.method == 'HEAD') {
-      data = res.headers;
-    } else if (!err && data && data.error) {
-      err = self._error(data);
-    } else {
-      try {
-        data = JSON.parse(data);
-      } catch (e) {
-        err = e;
-      }
-      if (!err) {
-        data = self._response(data);
-      }
-    }
-
-    var status, headers;
-    if (res) status = res.statusCode, headers = res.headers;
-
-    options.fn(err, data, status, headers, res);
-  });
-};
+var DB = clerk.DB.prototype;
 
 // Node.js compatible follow method, based on `follow` package.
 DB.follow = function(/* [query], [headers], [callback] */) {
@@ -182,3 +107,9 @@ clerk.uuids = function(/* [count], [encoding], [nbytes] */) {
 
   return uuids;
 };
+
+/**
+ * Export clerk.
+ */
+
+module.exports = clerk;

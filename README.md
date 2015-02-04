@@ -1,6 +1,6 @@
 # clerk [![Build Status](https://secure.travis-ci.org/mikepb/clerk.png)](http://travis-ci.org/mikepb/clerk)
 
-CouchDB library for node and the browser and sister project to [sage][sage]
+CouchDB library for node and the browser and sister project to [sage][]
 
 ```javascript
 var clerk = require('clerk');
@@ -20,12 +20,12 @@ db.info(function(err, info) {
 $ npm install clerk
 ```
 
-## Experimental Browser Support
+## Browser Support
 
-`clerk.js` and `clerk.min.js` are the browser and minified browser versions of
-the library. Modern browsers are generally supported, but not widely tested.
-The `test/index.html` and `test/index-min.html` run the [mocha][mocha] tests
-in the browser.
+Browser support is provided by [superagent][]. `clerk.js` and `clerk.min.js`
+are the browser and minified browser versions of the library. Modern browsers
+are generally supported, but not widely tested. The `test/index.html` and 
+`test/index-min.html` run the [mocha][] tests in the browser.
 
 Security restrictions on cross-domain requests currently limits the usefulness
 of the browser version. Using a local proxy or configuring [Cross-Origin
@@ -64,3 +64,4 @@ limitations under the License.
 [cors]: http://www.w3.org/TR/cors/
 [mocha]: http://mochajs.org/
 [sage]: https://github.com/mikepb/sage
+[superagent]: https://github.com/visionmedia/superagent
