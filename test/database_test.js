@@ -86,9 +86,10 @@ describe("DB", function () {
 
     describe("#info", function () {
       it("should return database info", function (done) {
+        var self = this;
         this.db.info(function (err, body, status, headers, res) {
           if (!err) {
-            expect(body).to.have.property("db_name", "clerk-test");
+            expect(body).to.have.property("db_name", self.dbname);
             expect(body).to.have.property("doc_count", 0);
             expect(body).to.have.property("doc_del_count", 0);
             shared.shouldHave2xxStatus(status);

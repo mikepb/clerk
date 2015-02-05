@@ -13,7 +13,9 @@ describe("Client", function () {
   describe("#db", function () {
     it("should return DB object", function () {
       expect(this.db).to.be.a(clerk.DB);
-      expect(this.db).to.have.property("uri", "http://127.0.0.1:5984/clerk-test");
+      var uri = this.baseURL.replace(/^(https?:\/\/)([^@\/]+@)/, "$1") + "/" +
+                this.dbname;
+      expect(this.db).to.have.property("uri", uri);
     });
   });
 
@@ -205,7 +207,7 @@ describe("Client", function () {
   describe("#replicate", function () {
 
     beforeEach(function () {
-      this.db = this.client.db("clerk-test");
+      this.db = this.client.db(this.dbname);
       this.replica = this.client.db("clerk-replicate-test");
     });
 
