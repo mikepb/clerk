@@ -4,11 +4,19 @@
  * Webpack configuration.
  */
 
-module.exports = {
+exports = module.exports = {
   output: {
     library: "clerk",
     libraryTarget: "this",
     sourcePrefix: ""
   },
+  externals: [
+    {
+      "sinon": "sinon",
+      "buffer": "",
+      "follow": "",
+      "./follow": ""
+    }
+  ],
   devtool: "source-map"
 };

@@ -8,7 +8,7 @@
     "type": "git",
     "url": "git://github.com/mikepb/clerk.git"
   },
-  "main": "./index.js",
+  "main": "./clerk.js",
   "engines": {
     "node": "^0.10.0"
   },

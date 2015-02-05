@@ -21,9 +21,7 @@ module.exports = function (config) {
 
     browsers: ["Chrome"],
 
-    webpack: {
-      externals: ["sinon"]
-    },
+    webpack: require("./webpack.config"),
 
     plugins: [
       "karma-chrome-launcher",
