@@ -22,15 +22,17 @@ $ npm install clerk
 
 ## Browser Support
 
-Browser support is provided by [superagent][]. `clerk.js` and `clerk.min.js`
-are the browser and minified browser versions of the library. Modern browsers
-are generally supported, but not widely tested. [Karma][karma] is used to 
-run the [mocha][] tests in the browser.
+Browser support is provided by [superagent][]. The browser versions of the
+library may be found under the `dist/` directory. The browser files are updated
+on each versioned release, but not for development. Modern browsers are
+generally supported, but not widely tested. [Karma][karma] is used to  run the
+[mocha][] tests in the browser.
 
 Security restrictions on cross-domain requests currently limits the usefulness
 of the browser version. Using a local proxy or configuring [Cross-Origin
 Resource Sharing][cors] in CouchDB may allow you to use the library in the
-browser.
+browser. Please see the configuration notes in the testing section for more
+information about CouchDB CORS support.
 
 To build the client files:
 

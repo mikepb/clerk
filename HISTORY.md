@@ -1,3 +1,12 @@
+0.7.0 / 2015-02-04
+==================
+
+  * Use superagent to support clerk in the browser
+  * Use Karma for browser testing
+  * Remove node uuid generator
+  * Beta: return promises when no callback given to support co
+
+
 0.6.1 / 2015-02-01
 ==================
   
