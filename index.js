@@ -21,7 +21,7 @@ limitations under the License.
  * Module dependencies.
  */
 
-var clerk = require('./lib/clerk');
+var clerk = require('./clerk');
 var crypto = require('crypto');
 var follow = require('follow');
 

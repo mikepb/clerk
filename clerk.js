@@ -1,50 +1,3 @@
-this["clerk"] =
-/******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId])
-/******/ 			return installedModules[moduleId].exports;
-/******/
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			exports: {},
-/******/ 			id: moduleId,
-/******/ 			loaded: false
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.loaded = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(0);
-/******/ })
-/************************************************************************/
-/******/ ([
-/* 0 */
-/***/ function(module, exports, __webpack_require__) {
-
 "use strict";
 
 /*!
@@ -70,13 +23,7 @@ limitations under the License.
  * Module dependencies.
  */
 
-var request = __webpack_require__(1);
-
-/**
- * No-op function.
- */
-
-var noop = function () {};
+var request = require("superagent");
 
 /**
  * Copy properties from sources to target.
@@ -208,8 +155,29 @@ clerk.make = function (uri) {
     db = db[1] && decodeURIComponent(db[1]);
   }
 
-  var client = new clerk.Client(uri.base + uri.path);
+  // weird way of doing it, but it's more efficient...
+  if (uri.auth) uri.auth = 'Basic ' + clerk.btoa(uri.auth);
+
+  var client = new clerk.Client(uri.base + uri.path, uri.auth);
   return db ? client.db(db) : client;
+};
+
+/**
+ * Base64-encode a string.
+ *
+ * @param {String} str
+ * @return {String}
+ */
+
+clerk.btoa = function (str) {
+  switch (true) {
+    case typeof btoa != "undefined":
+      return btoa(str);
+    case typeof Buffer != "undefined":
+      return new Buffer(str).toString('base64');
+    default:
+      throw new Error('btoa not available');
+  }
 };
 
 /**
@@ -225,10 +193,11 @@ clerk._parseURI = function (uri) {
   var match;
 
   if (uri) {
-    if (match = /^(https?:\/\/[^\/]+)([^\/]+)(.*)\/*$/.exec(uri)) {
+    if (match = /^(https?:\/\/)(?:([^\/@]+)@)?([^\/]+)(.*)\/*$/.exec(uri)) {
       return {
-        base: match[1] + match[2].replace(/\/+/g, "\/"),
-        path: match[3]
+        base: match[1] + match[3].replace(/\/+/g, "\/"),
+        path: match[4],
+        auth: match[2] && decodeURIComponent(match[2])
       };
     }
   }
@@ -262,8 +231,8 @@ clerk.Base.prototype = {
    */
 
   request: function (/* [method], [path], [query], [data], [headers], [callback] */) {
-    var args = [].slice.call(arguments)
-      , callback = isFunction (args[args.length - 1]) && args.pop();
+    var args = [].slice.call(arguments);
+    var callback = isFunction (args[args.length - 1]) && args.pop();
 
     return this._request({
       method: args[0],
@@ -293,18 +262,21 @@ clerk.Base.prototype = {
    */
 
   _request: function (options) {
-    var promise;
+    if (options.method == null) options.method = "GET";
+    if (options.headers == null) options.headers = {};
+    if (options.auth == null) options.auth = this.auth;
 
-    if (!options.method) options.method = "GET";
-    if (!options.headers) options.headers = {};
     options.path = options.path ? "/" + options.path : "";
 
     // set default headers
-    if (!("Content-Type" in options.headers)) {
+    if (options.headers["Content-Type"] == null) {
       options.headers["Content-Type"] = "application/json";
     }
-    if (!("Accept" in options.headers)) {
+    if (options.headers["Accept"] == null) {
       options.headers["Accept"] = "application/json";
+    }
+    if (this.auth && options.headers["Authorization"] == null) {
+      options.headers["Authorization"] = this.auth;
     }
 
     options.uri = this.uri + options.path;
@@ -312,10 +284,12 @@ clerk.Base.prototype = {
       /^\/_design/.test(options.path) && this._replacer
     ) || "";
 
-    // return promise if no callback given
-    if (!options.fn && clerk.Promise) {
+    // create promise if no callback given
+    var promise;
+    var fn = options.fn;
+    if (!fn && clerk.Promise) {
       promise = clerk.Promise.defer();
-      options.fn = function (err, data, status, headers, res) {
+      fn = function (err, data, status, headers, res) {
         if (err) {
           err.body = data;
           err.status = status;
@@ -331,13 +305,25 @@ clerk.Base.prototype = {
             });
           }
           promise.resolve(data);
-        }
+        };
       };
     }
 
-    this._do(options);
+    // apply response transforms
+    var g = options._;
+    if (fn) {
+      options.fn = g ? function () {
+        fn.apply(this, g.apply(this, arguments) || arguments);
+      } : fn;
+    }
 
-    return promise;
+    var req = this._do(options);
+
+    // return promise if it was created
+    if (promise) {
+      promise.promise.request = req;
+      return promise.promise;
+    }
   },
 
   /**
@@ -377,17 +363,20 @@ clerk.Base.prototype = {
       req.query(options.query);
     }
 
-    // if auth passed in as object instead of in uri
-    if (options.auth) req.auth(options.auth);
-
     // set headers
-    if (options.headers) req.set(options.headers);
+    if (options.headers) {
+      req.set(options.headers);
+      // if authenticating
+      if (req.withCredentials && options.headers["Authorization"] != null) {
+        req.withCredentials();
+      }
+    }
 
     // send body
     if (options.body) req.send(options.body);
 
     // send request
-    var fn = options.fn || noop;
+    var fn = options.fn;
     req.end(function (res) {
       var err = res.error;
       var data;
@@ -398,8 +387,10 @@ clerk.Base.prototype = {
         else data = self._response(data);
       }
 
-      fn(err || null, data, res.status, res.header, res);
+      fn && fn(err || null, data, res.status, res.header, res);
     });
+
+    return req;
   },
 
   /**
@@ -411,9 +402,9 @@ clerk.Base.prototype = {
    */
 
   _response: function (json) {
-    var data = json.rows || json.results || json.uuids || isArray(json) && json
-      , meta = this._meta
-      , i = 0, len, item;
+    var data = json.rows || json.results || json.uuids || isArray(json) && json;
+    var meta = this._meta;
+    var i = 0, len, item;
 
     if (data) {
       extend(data, json).json = json;
@@ -465,9 +456,9 @@ clerk.Base.prototype = {
    */
 
   _meta: function (doc) {
-    var hasId = !doc._id && doc.id
-      , hasRev = !doc._rev && doc.rev
-      , proto;
+    var hasId = !doc._id && doc.id;
+    var hasRev = !doc._rev && doc.rev;
+    var proto;
 
     if (hasId || hasRev) {
       proto = function (){};
@@ -518,14 +509,14 @@ clerk.Base.prototype = {
         data: options.b || request.b,
         headers: options.h || request.h,
         fn: options.f || request.f,
-        state: request
+        _: options._ || request._
       });
     }
 
     // [id], [doc], [query], [header], [callback]
     args = [].slice.call(args, start || 0);
 
-    request.f = isFunction (args[args.length - 1]) && args.pop();
+    request.f = isFunction(args[args.length - 1]) && args.pop();
     request.p = isString(args[0]) && encodeURI(args.shift());
     request.q = args[withDoc ? 1 : 0] || {};
     request.h = args[withDoc ? 2 : 1] || {};
@@ -546,12 +537,14 @@ clerk.Base.prototype = {
  * Clerk CouchDB client.
  *
  * @param {String} uri Fully qualified URI.
+ * @param {String} [auth] Authentication header value.
  * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Complete_HTTP_API_Reference)
  */
 
-clerk.Client = function (uri) {
+clerk.Client = function (uri, auth) {
   this.uri = uri;
   this._db = {};
+  this.auth = auth;
 };
 
 clerk.Client.prototype = extend(new clerk.Base(), {
@@ -565,7 +558,7 @@ clerk.Client.prototype = extend(new clerk.Base(), {
 
   db: function (name) {
     var db = this._db;
-    return db[name] || (db[name] = new clerk.DB(this, name));
+    return db[name] || (db[name] = new clerk.DB(this, name, this.auth));
   },
 
   /**
@@ -627,15 +620,7 @@ clerk.Client.prototype = extend(new clerk.Base(), {
    */
 
   log: function (/* [query], [headers], [callback] */) {
-    var request = this._(arguments), callback = request.f;
-
-    if (!callback) return this;
-
-    request.f = function (e) {
-      if (e instanceof SyntaxError) e = null;
-      callback.apply(this, arguments);
-    };
-    return request("GET", "_log");
+    return this._(arguments)("GET", "_log");
   },
 
   /**
@@ -658,10 +643,10 @@ clerk.Client.prototype = extend(new clerk.Base(), {
    */
 
   config: function (/* [key], [value], [query], [headers], [callback] */) {
-    var args = [].slice.call(arguments)
-      , key = isString(args[0]) && args.shift() || ""
-      , value = isString(args[0]) && args.shift()
-      , method = isString(value) ? "PUT" : "GET";
+    var args = [].slice.call(arguments);
+    var key = isString(args[0]) && args.shift() || "";
+    var value = isString(args[0]) && args.shift();
+    var method = isString(value) ? "PUT" : "GET";
     return this._(args)(method, "_config/" + key, { b: value });
   },
 
@@ -696,13 +681,15 @@ clerk.Client.prototype = extend(new clerk.Base(), {
  *
  * @param {Client} client Clerk client.
  * @param {String} name DB name.
+ * @param {String} [auth] Authentication header value.
  * @return This object for chaining.
  */
 
-clerk.DB = function (client, name) {
+clerk.DB = function (client, name, auth) {
   this.client = client;
   this.name = name;
   this.uri = client.uri + "/" + encodeURIComponent(name);
+  this.auth = auth;
 };
 
 clerk.DB.prototype = extend(new clerk.Base(), {
@@ -744,14 +731,10 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    */
 
   exists: function (/* [query], [headers], callback */) {
-    var request = this._(arguments), callback = request.f;
-
-    if (!callback) return this;
-
-    request.f = function (err, body, status, headers, req) {
-      callback(err, status === 200, status, headers, req);
+    var request = this._(arguments);
+    request._ = function (err, body, status, headers, req) {
+      return [err, status === 200, status, headers, req];
     };
-
     return request("HEAD");
   },
 
@@ -796,21 +779,16 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    */
 
   head: function (/* [id], [query], [headers], callback */) {
-    var self = this
-      , request = self._(arguments), callback = request.f
-      , id = request.p;
-
-    if (!callback) return this;
-
-    request.f = function (err, body, status, headers, res) {
-      callback(err, err ? null : self._meta({
-        _id: id,
+    var self = this;
+    var request = self._(arguments);
+    request._ = function (err, body, status, headers, res) {
+      return [err, err ? null : {
+        _id: request.p,
         _rev: headers.etag && JSON.parse(headers.etag),
         contentType: headers["content-type"],
         contentLength: headers["content-length"]
-      }), status, headers, res);
+      }, status, headers, res];
     };
-
     return request("HEAD");
   },
 
@@ -848,23 +826,9 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   post: function (docs /* [query], [headers], [callback] */) {
     var request = this._(arguments, 1);
     if (isArray(docs)) {
-      var callback = request.f;
-
       request.p = "_bulk_docs";
       request.b = extend({ docs: docs }, request.q);
       request.q = null
-
-      // CouchDB older than 1.2 are missing the ok: true property
-      if (callback) request.f = function (err, body) {
-        if (!err) {
-          var i = 0, len = body.length, doc;
-          for (; i < len; i++) {
-            doc = body[i];
-            if (!doc.error) doc.ok = true;
-          }
-        }
-        callback.apply(this, arguments);
-      };
     } else {
       request.b = docs;
     }
@@ -940,24 +904,16 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    */
 
   copy: function (source, target /* [query], [headers], [callback] */) {
-    var request = this._(arguments, 2)
-      , sourcePath = encodeURIComponent(source.id || source._id || source)
-      , targetPath = encodeURIComponent(target.id || target._id || target)
-      , sourceRev = source.rev || source._rev
-      , targetRev = target.rev || target._rev
-      , callback = request.f;
+    var request = this._(arguments, 2);
+    var sourcePath = encodeURIComponent(source.id || source._id || source);
+    var targetPath = encodeURIComponent(target.id || target._id || target);
+    var sourceRev = source.rev || source._rev;
+    var targetRev = target.rev || target._rev;
 
     if (sourceRev) request.q.rev = sourceRev;
     if (targetRev) targetPath += "?rev=" + encodeURIComponent(targetRev);
 
     request.h.Destination = targetPath;
-
-    // CouchDB older than 1.2 are missing the ok: true property
-    // https://issues.apache.org/jira/browse/COUCHDB-903
-    if (callback) request.f = function (err, body) {
-      if (!err) body.ok = true;
-      callback.apply(this, arguments);
-    };
 
     return request("COPY", sourcePath);
   },
@@ -986,8 +942,8 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    */
 
   all: function (/* [query], [headers], [callback] */) {
-    var request = this._(arguments)
-      , body = this._viewOptions(request.q);
+    var request = this._(arguments);
+    var body = this._viewOptions(request.q);
     return request(body ? "POST" : "GET", "_all_docs", { b: body });
   },
 
@@ -1031,7 +987,8 @@ clerk.DB.prototype = extend(new clerk.Base(), {
 
     if (isString(view)) {
       path = view.split("/", 2);
-      path = "_design/" + encodeURIComponent(path[0]) + "/_view/" + encodeURIComponent(path[1]);
+      path = "_design/" + encodeURIComponent(path[0]) +
+             "/_view/" + encodeURIComponent(path[1]);
     } else {
       path = "_temp_view";
       body = view;
@@ -1084,8 +1041,8 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    */
 
   follow: function (/* [query], [headers], callback */) {
-    var request = this._(arguments)
-      , fn = request.f;
+    var request = this._(arguments);
+    var fn = request.f;
 
     if (!fn) return this;
 
@@ -1126,10 +1083,12 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    */
 
   update: function (handler /* [id], [query], [data], [headers], [callback] */) {
-    var request = this._(arguments, 1, 1)
-      , path = handler.split("/", 2);
+    var request = this._(arguments, 1, 1);
+    var path = handler.split("/", 2);
 
-    path = "_design/" + encodeURIComponent(path[0]) + "/_update/" + encodeURIComponent(path[1]);
+    path = "_design/" + encodeURIComponent(path[0]) +
+           "/_update/" + encodeURIComponent(path[1]);
+
     if (request.p) path += "/" + request.p;
 
     return request(request.p ? "PUT" : "POST", path, {
@@ -1149,7 +1108,8 @@ clerk.DB.prototype = extend(new clerk.Base(), {
 
   attachment: function (doc, attachmentName /* [query], [headers], [callback] */) {
     var request = this._(arguments, 2);
-    var path = encodeURIComponent(doc._id || doc.id || doc) + "/" + encodeURIComponent(attachmentName);
+    var path = encodeURIComponent(doc._id || doc.id || doc) + "/" +
+               encodeURIComponent(attachmentName);
     return request("GET", path, options);
   },
 
@@ -1167,7 +1127,8 @@ clerk.DB.prototype = extend(new clerk.Base(), {
 
   attach: function (doc, attachmentName, data /* [query], [headers], [callback] */) {
     var request = this._(arguments, 3);
-    request.p = encodeURIComponent(doc._id || doc.id) + "/" + encodeURIComponent(attachmentName);
+    request.p = encodeURIComponent(doc._id || doc.id) + "/" +
+                encodeURIComponent(attachmentName);
     if (!request.q.rev) request.q.rev = doc._rev || doc.rev;
     request.q.body = data;
     return request("PUT", path);
@@ -1271,1294 +1232,3 @@ clerk.DB.prototype = extend(new clerk.Base(), {
  */
 
 module.exports = clerk;
-
-
-/***/ },
-/* 1 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * Module dependencies.
- */
-
-var Emitter = __webpack_require__(2);
-var reduce = __webpack_require__(3);
-
-/**
- * Root reference for iframes.
- */
-
-var root = 'undefined' == typeof window
-  ? this
-  : window;
-
-/**
- * Noop.
- */
-
-function noop(){};
-
-/**
- * Check if `obj` is a host object,
- * we don't want to serialize these :)
- *
- * TODO: future proof, move to compoent land
- *
- * @param {Object} obj
- * @return {Boolean}
- * @api private
- */
-
-function isHost(obj) {
-  var str = {}.toString.call(obj);
-
-  switch (str) {
-    case '[object File]':
-    case '[object Blob]':
-    case '[object FormData]':
-      return true;
-    default:
-      return false;
-  }
-}
-
-/**
- * Determine XHR.
- */
-
-function getXHR() {
-  if (root.XMLHttpRequest
-    && ('file:' != root.location.protocol || !root.ActiveXObject)) {
-    return new XMLHttpRequest;
-  } else {
-    try { return new ActiveXObject('Microsoft.XMLHTTP'); } catch(e) {}
-    try { return new ActiveXObject('Msxml2.XMLHTTP.6.0'); } catch(e) {}
-    try { return new ActiveXObject('Msxml2.XMLHTTP.3.0'); } catch(e) {}
-    try { return new ActiveXObject('Msxml2.XMLHTTP'); } catch(e) {}
-  }
-  return false;
-}
-
-/**
- * Removes leading and trailing whitespace, added to support IE.
- *
- * @param {String} s
- * @return {String}
- * @api private
- */
-
-var trim = ''.trim
-  ? function(s) { return s.trim(); }
-  : function(s) { return s.replace(/(^\s*|\s*$)/g, ''); };
-
-/**
- * Check if `obj` is an object.
- *
- * @param {Object} obj
- * @return {Boolean}
- * @api private
- */
-
-function isObject(obj) {
-  return obj === Object(obj);
-}
-
-/**
- * Serialize the given `obj`.
- *
- * @param {Object} obj
- * @return {String}
- * @api private
- */
-
-function serialize(obj) {
-  if (!isObject(obj)) return obj;
-  var pairs = [];
-  for (var key in obj) {
-    if (null != obj[key]) {
-      pairs.push(encodeURIComponent(key)
-        + '=' + encodeURIComponent(obj[key]));
-    }
-  }
-  return pairs.join('&');
-}
-
-/**
- * Expose serialization method.
- */
-
- request.serializeObject = serialize;
-
- /**
-  * Parse the given x-www-form-urlencoded `str`.
-  *
-  * @param {String} str
-  * @return {Object}
-  * @api private
-  */
-
-function parseString(str) {
-  var obj = {};
-  var pairs = str.split('&');
-  var parts;
-  var pair;
-
-  for (var i = 0, len = pairs.length; i < len; ++i) {
-    pair = pairs[i];
-    parts = pair.split('=');
-    obj[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1]);
-  }
-
-  return obj;
-}
-
-/**
- * Expose parser.
- */
-
-request.parseString = parseString;
-
-/**
- * Default MIME type map.
- *
- *     superagent.types.xml = 'application/xml';
- *
- */
-
-request.types = {
-  html: 'text/html',
-  json: 'application/json',
-  xml: 'application/xml',
-  urlencoded: 'application/x-www-form-urlencoded',
-  'form': 'application/x-www-form-urlencoded',
-  'form-data': 'application/x-www-form-urlencoded'
-};
-
-/**
- * Default serialization map.
- *
- *     superagent.serialize['application/xml'] = function(obj){
- *       return 'generated xml here';
- *     };
- *
- */
-
- request.serialize = {
-   'application/x-www-form-urlencoded': serialize,
-   'application/json': JSON.stringify
- };
-
- /**
-  * Default parsers.
-  *
-  *     superagent.parse['application/xml'] = function(str){
-  *       return { object parsed from str };
-  *     };
-  *
-  */
-
-request.parse = {
-  'application/x-www-form-urlencoded': parseString,
-  'application/json': JSON.parse
-};
-
-/**
- * Parse the given header `str` into
- * an object containing the mapped fields.
- *
- * @param {String} str
- * @return {Object}
- * @api private
- */
-
-function parseHeader(str) {
-  var lines = str.split(/\r?\n/);
-  var fields = {};
-  var index;
-  var line;
-  var field;
-  var val;
-
-  lines.pop(); // trailing CRLF
-
-  for (var i = 0, len = lines.length; i < len; ++i) {
-    line = lines[i];
-    index = line.indexOf(':');
-    field = line.slice(0, index).toLowerCase();
-    val = trim(line.slice(index + 1));
-    fields[field] = val;
-  }
-
-  return fields;
-}
-
-/**
- * Return the mime type for the given `str`.
- *
- * @param {String} str
- * @return {String}
- * @api private
- */
-
-function type(str){
-  return str.split(/ *; */).shift();
-};
-
-/**
- * Return header field parameters.
- *
- * @param {String} str
- * @return {Object}
- * @api private
- */
-
-function params(str){
-  return reduce(str.split(/ *; */), function(obj, str){
-    var parts = str.split(/ *= */)
-      , key = parts.shift()
-      , val = parts.shift();
-
-    if (key && val) obj[key] = val;
-    return obj;
-  }, {});
-};
-
-/**
- * Initialize a new `Response` with the given `xhr`.
- *
- *  - set flags (.ok, .error, etc)
- *  - parse header
- *
- * Examples:
- *
- *  Aliasing `superagent` as `request` is nice:
- *
- *      request = superagent;
- *
- *  We can use the promise-like API, or pass callbacks:
- *
- *      request.get('/').end(function(res){});
- *      request.get('/', function(res){});
- *
- *  Sending data can be chained:
- *
- *      request
- *        .post('/user')
- *        .send({ name: 'tj' })
- *        .end(function(res){});
- *
- *  Or passed to `.send()`:
- *
- *      request
- *        .post('/user')
- *        .send({ name: 'tj' }, function(res){});
- *
- *  Or passed to `.post()`:
- *
- *      request
- *        .post('/user', { name: 'tj' })
- *        .end(function(res){});
- *
- * Or further reduced to a single call for simple cases:
- *
- *      request
- *        .post('/user', { name: 'tj' }, function(res){});
- *
- * @param {XMLHTTPRequest} xhr
- * @param {Object} options
- * @api private
- */
-
-function Response(req, options) {
-  options = options || {};
-  this.req = req;
-  this.xhr = this.req.xhr;
-  this.text = this.req.method !='HEAD' 
-     ? this.xhr.responseText 
-     : null;
-  this.setStatusProperties(this.xhr.status);
-  this.header = this.headers = parseHeader(this.xhr.getAllResponseHeaders());
-  // getAllResponseHeaders sometimes falsely returns "" for CORS requests, but
-  // getResponseHeader still works. so we get content-type even if getting
-  // other headers fails.
-  this.header['content-type'] = this.xhr.getResponseHeader('content-type');
-  this.setHeaderProperties(this.header);
-  this.body = this.req.method != 'HEAD'
-    ? this.parseBody(this.text)
-    : null;
-}
-
-/**
- * Get case-insensitive `field` value.
- *
- * @param {String} field
- * @return {String}
- * @api public
- */
-
-Response.prototype.get = function(field){
-  return this.header[field.toLowerCase()];
-};
-
-/**
- * Set header related properties:
- *
- *   - `.type` the content type without params
- *
- * A response of "Content-Type: text/plain; charset=utf-8"
- * will provide you with a `.type` of "text/plain".
- *
- * @param {Object} header
- * @api private
- */
-
-Response.prototype.setHeaderProperties = function(header){
-  // content-type
-  var ct = this.header['content-type'] || '';
-  this.type = type(ct);
-
-  // params
-  var obj = params(ct);
-  for (var key in obj) this[key] = obj[key];
-};
-
-/**
- * Parse the given body `str`.
- *
- * Used for auto-parsing of bodies. Parsers
- * are defined on the `superagent.parse` object.
- *
- * @param {String} str
- * @return {Mixed}
- * @api private
- */
-
-Response.prototype.parseBody = function(str){
-  var parse = request.parse[this.type];
-  return parse && str && str.length
-    ? parse(str)
-    : null;
-};
-
-/**
- * Set flags such as `.ok` based on `status`.
- *
- * For example a 2xx response will give you a `.ok` of __true__
- * whereas 5xx will be __false__ and `.error` will be __true__. The
- * `.clientError` and `.serverError` are also available to be more
- * specific, and `.statusType` is the class of error ranging from 1..5
- * sometimes useful for mapping respond colors etc.
- *
- * "sugar" properties are also defined for common cases. Currently providing:
- *
- *   - .noContent
- *   - .badRequest
- *   - .unauthorized
- *   - .notAcceptable
- *   - .notFound
- *
- * @param {Number} status
- * @api private
- */
-
-Response.prototype.setStatusProperties = function(status){
-  var type = status / 100 | 0;
-
-  // status / class
-  this.status = status;
-  this.statusType = type;
-
-  // basics
-  this.info = 1 == type;
-  this.ok = 2 == type;
-  this.clientError = 4 == type;
-  this.serverError = 5 == type;
-  this.error = (4 == type || 5 == type)
-    ? this.toError()
-    : false;
-
-  // sugar
-  this.accepted = 202 == status;
-  this.noContent = 204 == status || 1223 == status;
-  this.badRequest = 400 == status;
-  this.unauthorized = 401 == status;
-  this.notAcceptable = 406 == status;
-  this.notFound = 404 == status;
-  this.forbidden = 403 == status;
-};
-
-/**
- * Return an `Error` representative of this response.
- *
- * @return {Error}
- * @api public
- */
-
-Response.prototype.toError = function(){
-  var req = this.req;
-  var method = req.method;
-  var url = req.url;
-
-  var msg = 'cannot ' + method + ' ' + url + ' (' + this.status + ')';
-  var err = new Error(msg);
-  err.status = this.status;
-  err.method = method;
-  err.url = url;
-
-  return err;
-};
-
-/**
- * Expose `Response`.
- */
-
-request.Response = Response;
-
-/**
- * Initialize a new `Request` with the given `method` and `url`.
- *
- * @param {String} method
- * @param {String} url
- * @api public
- */
-
-function Request(method, url) {
-  var self = this;
-  Emitter.call(this);
-  this._query = this._query || [];
-  this.method = method;
-  this.url = url;
-  this.header = {};
-  this._header = {};
-  this.on('end', function(){
-    var err = null;
-    var res = null;
-
-    try {
-      res = new Response(self); 
-    } catch(e) {
-      err = new Error('Parser is unable to parse the response');
-      err.parse = true;
-      err.original = e;
-    }
-
-    self.callback(err, res);
-  });
-}
-
-/**
- * Mixin `Emitter`.
- */
-
-Emitter(Request.prototype);
-
-/**
- * Allow for extension
- */
-
-Request.prototype.use = function(fn) {
-  fn(this);
-  return this;
-}
-
-/**
- * Set timeout to `ms`.
- *
- * @param {Number} ms
- * @return {Request} for chaining
- * @api public
- */
-
-Request.prototype.timeout = function(ms){
-  this._timeout = ms;
-  return this;
-};
-
-/**
- * Clear previous timeout.
- *
- * @return {Request} for chaining
- * @api public
- */
-
-Request.prototype.clearTimeout = function(){
-  this._timeout = 0;
-  clearTimeout(this._timer);
-  return this;
-};
-
-/**
- * Abort the request, and clear potential timeout.
- *
- * @return {Request}
- * @api public
- */
-
-Request.prototype.abort = function(){
-  if (this.aborted) return;
-  this.aborted = true;
-  this.xhr.abort();
-  this.clearTimeout();
-  this.emit('abort');
-  return this;
-};
-
-/**
- * Set header `field` to `val`, or multiple fields with one object.
- *
- * Examples:
- *
- *      req.get('/')
- *        .set('Accept', 'application/json')
- *        .set('X-API-Key', 'foobar')
- *        .end(callback);
- *
- *      req.get('/')
- *        .set({ Accept: 'application/json', 'X-API-Key': 'foobar' })
- *        .end(callback);
- *
- * @param {String|Object} field
- * @param {String} val
- * @return {Request} for chaining
- * @api public
- */
-
-Request.prototype.set = function(field, val){
-  if (isObject(field)) {
-    for (var key in field) {
-      this.set(key, field[key]);
-    }
-    return this;
-  }
-  this._header[field.toLowerCase()] = val;
-  this.header[field] = val;
-  return this;
-};
-
-/**
- * Remove header `field`.
- *
- * Example:
- *
- *      req.get('/')
- *        .unset('User-Agent')
- *        .end(callback);
- *
- * @param {String} field
- * @return {Request} for chaining
- * @api public
- */
-
-Request.prototype.unset = function(field){
-  delete this._header[field.toLowerCase()];
-  delete this.header[field];
-  return this;
-};
-
-/**
- * Get case-insensitive header `field` value.
- *
- * @param {String} field
- * @return {String}
- * @api private
- */
-
-Request.prototype.getHeader = function(field){
-  return this._header[field.toLowerCase()];
-};
-
-/**
- * Set Content-Type to `type`, mapping values from `request.types`.
- *
- * Examples:
- *
- *      superagent.types.xml = 'application/xml';
- *
- *      request.post('/')
- *        .type('xml')
- *        .send(xmlstring)
- *        .end(callback);
- *
- *      request.post('/')
- *        .type('application/xml')
- *        .send(xmlstring)
- *        .end(callback);
- *
- * @param {String} type
- * @return {Request} for chaining
- * @api public
- */
-
-Request.prototype.type = function(type){
-  this.set('Content-Type', request.types[type] || type);
-  return this;
-};
-
-/**
- * Set Accept to `type`, mapping values from `request.types`.
- *
- * Examples:
- *
- *      superagent.types.json = 'application/json';
- *
- *      request.get('/agent')
- *        .accept('json')
- *        .end(callback);
- *
- *      request.get('/agent')
- *        .accept('application/json')
- *        .end(callback);
- *
- * @param {String} accept
- * @return {Request} for chaining
- * @api public
- */
-
-Request.prototype.accept = function(type){
-  this.set('Accept', request.types[type] || type);
-  return this;
-};
-
-/**
- * Set Authorization field value with `user` and `pass`.
- *
- * @param {String} user
- * @param {String} pass
- * @return {Request} for chaining
- * @api public
- */
-
-Request.prototype.auth = function(user, pass){
-  var str = btoa(user + ':' + pass);
-  this.set('Authorization', 'Basic ' + str);
-  return this;
-};
-
-/**
-* Add query-string `val`.
-*
-* Examples:
-*
-*   request.get('/shoes')
-*     .query('size=10')
-*     .query({ color: 'blue' })
-*
-* @param {Object|String} val
-* @return {Request} for chaining
-* @api public
-*/
-
-Request.prototype.query = function(val){
-  if ('string' != typeof val) val = serialize(val);
-  if (val) this._query.push(val);
-  return this;
-};
-
-/**
- * Write the field `name` and `val` for "multipart/form-data"
- * request bodies.
- *
- * ``` js
- * request.post('/upload')
- *   .field('foo', 'bar')
- *   .end(callback);
- * ```
- *
- * @param {String} name
- * @param {String|Blob|File} val
- * @return {Request} for chaining
- * @api public
- */
-
-Request.prototype.field = function(name, val){
-  if (!this._formData) this._formData = new FormData();
-  this._formData.append(name, val);
-  return this;
-};
-
-/**
- * Queue the given `file` as an attachment to the specified `field`,
- * with optional `filename`.
- *
- * ``` js
- * request.post('/upload')
- *   .attach(new Blob(['<a id="a"><b id="b">hey!</b></a>'], { type: "text/html"}))
- *   .end(callback);
- * ```
- *
- * @param {String} field
- * @param {Blob|File} file
- * @param {String} filename
- * @return {Request} for chaining
- * @api public
- */
-
-Request.prototype.attach = function(field, file, filename){
-  if (!this._formData) this._formData = new FormData();
-  this._formData.append(field, file, filename);
-  return this;
-};
-
-/**
- * Send `data`, defaulting the `.type()` to "json" when
- * an object is given.
- *
- * Examples:
- *
- *       // querystring
- *       request.get('/search')
- *         .end(callback)
- *
- *       // multiple data "writes"
- *       request.get('/search')
- *         .send({ search: 'query' })
- *         .send({ range: '1..5' })
- *         .send({ order: 'desc' })
- *         .end(callback)
- *
- *       // manual json
- *       request.post('/user')
- *         .type('json')
- *         .send('{"name":"tj"})
- *         .end(callback)
- *
- *       // auto json
- *       request.post('/user')
- *         .send({ name: 'tj' })
- *         .end(callback)
- *
- *       // manual x-www-form-urlencoded
- *       request.post('/user')
- *         .type('form')
- *         .send('name=tj')
- *         .end(callback)
- *
- *       // auto x-www-form-urlencoded
- *       request.post('/user')
- *         .type('form')
- *         .send({ name: 'tj' })
- *         .end(callback)
- *
- *       // defaults to x-www-form-urlencoded
-  *      request.post('/user')
-  *        .send('name=tobi')
-  *        .send('species=ferret')
-  *        .end(callback)
- *
- * @param {String|Object} data
- * @return {Request} for chaining
- * @api public
- */
-
-Request.prototype.send = function(data){
-  var obj = isObject(data);
-  var type = this.getHeader('Content-Type');
-
-  // merge
-  if (obj && isObject(this._data)) {
-    for (var key in data) {
-      this._data[key] = data[key];
-    }
-  } else if ('string' == typeof data) {
-    if (!type) this.type('form');
-    type = this.getHeader('Content-Type');
-    if ('application/x-www-form-urlencoded' == type) {
-      this._data = this._data
-        ? this._data + '&' + data
-        : data;
-    } else {
-      this._data = (this._data || '') + data;
-    }
-  } else {
-    this._data = data;
-  }
-
-  if (!obj) return this;
-  if (!type) this.type('json');
-  return this;
-};
-
-/**
- * Invoke the callback with `err` and `res`
- * and handle arity check.
- *
- * @param {Error} err
- * @param {Response} res
- * @api private
- */
-
-Request.prototype.callback = function(err, res){
-  var fn = this._callback;
-  this.clearTimeout();
-  if (2 == fn.length) return fn(err, res);
-  if (err) return this.emit('error', err);
-  fn(res);
-};
-
-/**
- * Invoke callback with x-domain error.
- *
- * @api private
- */
-
-Request.prototype.crossDomainError = function(){
-  var err = new Error('Origin is not allowed by Access-Control-Allow-Origin');
-  err.crossDomain = true;
-  this.callback(err);
-};
-
-/**
- * Invoke callback with timeout error.
- *
- * @api private
- */
-
-Request.prototype.timeoutError = function(){
-  var timeout = this._timeout;
-  var err = new Error('timeout of ' + timeout + 'ms exceeded');
-  err.timeout = timeout;
-  this.callback(err);
-};
-
-/**
- * Enable transmission of cookies with x-domain requests.
- *
- * Note that for this to work the origin must not be
- * using "Access-Control-Allow-Origin" with a wildcard,
- * and also must set "Access-Control-Allow-Credentials"
- * to "true".
- *
- * @api public
- */
-
-Request.prototype.withCredentials = function(){
-  this._withCredentials = true;
-  return this;
-};
-
-/**
- * Initiate request, invoking callback `fn(res)`
- * with an instanceof `Response`.
- *
- * @param {Function} fn
- * @return {Request} for chaining
- * @api public
- */
-
-Request.prototype.end = function(fn){
-  var self = this;
-  var xhr = this.xhr = getXHR();
-  var query = this._query.join('&');
-  var timeout = this._timeout;
-  var data = this._formData || this._data;
-
-  // store callback
-  this._callback = fn || noop;
-
-  // state change
-  xhr.onreadystatechange = function(){
-    if (4 != xhr.readyState) return;
-    if (0 == xhr.status) {
-      if (self.aborted) return self.timeoutError();
-      return self.crossDomainError();
-    }
-    self.emit('end');
-  };
-
-  // progress
-  if (xhr.upload) {
-    xhr.upload.onprogress = function(e){
-      e.percent = e.loaded / e.total * 100;
-      self.emit('progress', e);
-    };
-  }
-
-  // timeout
-  if (timeout && !this._timer) {
-    this._timer = setTimeout(function(){
-      self.abort();
-    }, timeout);
-  }
-
-  // querystring
-  if (query) {
-    query = request.serializeObject(query);
-    this.url += ~this.url.indexOf('?')
-      ? '&' + query
-      : '?' + query;
-  }
-
-  // initiate request
-  xhr.open(this.method, this.url, true);
-
-  // CORS
-  if (this._withCredentials) xhr.withCredentials = true;
-
-  // body
-  if ('GET' != this.method && 'HEAD' != this.method && 'string' != typeof data && !isHost(data)) {
-    // serialize stuff
-    var serialize = request.serialize[this.getHeader('Content-Type')];
-    if (serialize) data = serialize(data);
-  }
-
-  // set header fields
-  for (var field in this.header) {
-    if (null == this.header[field]) continue;
-    xhr.setRequestHeader(field, this.header[field]);
-  }
-
-  // send stuff
-  this.emit('request', this);
-  xhr.send(data);
-  return this;
-};
-
-/**
- * Expose `Request`.
- */
-
-request.Request = Request;
-
-/**
- * Issue a request:
- *
- * Examples:
- *
- *    request('GET', '/users').end(callback)
- *    request('/users').end(callback)
- *    request('/users', callback)
- *
- * @param {String} method
- * @param {String|Function} url or callback
- * @return {Request}
- * @api public
- */
-
-function request(method, url) {
-  // callback
-  if ('function' == typeof url) {
-    return new Request('GET', method).end(url);
-  }
-
-  // url first
-  if (1 == arguments.length) {
-    return new Request('GET', method);
-  }
-
-  return new Request(method, url);
-}
-
-/**
- * GET `url` with optional callback `fn(res)`.
- *
- * @param {String} url
- * @param {Mixed|Function} data or fn
- * @param {Function} fn
- * @return {Request}
- * @api public
- */
-
-request.get = function(url, data, fn){
-  var req = request('GET', url);
-  if ('function' == typeof data) fn = data, data = null;
-  if (data) req.query(data);
-  if (fn) req.end(fn);
-  return req;
-};
-
-/**
- * HEAD `url` with optional callback `fn(res)`.
- *
- * @param {String} url
- * @param {Mixed|Function} data or fn
- * @param {Function} fn
- * @return {Request}
- * @api public
- */
-
-request.head = function(url, data, fn){
-  var req = request('HEAD', url);
-  if ('function' == typeof data) fn = data, data = null;
-  if (data) req.send(data);
-  if (fn) req.end(fn);
-  return req;
-};
-
-/**
- * DELETE `url` with optional callback `fn(res)`.
- *
- * @param {String} url
- * @param {Function} fn
- * @return {Request}
- * @api public
- */
-
-request.del = function(url, fn){
-  var req = request('DELETE', url);
-  if (fn) req.end(fn);
-  return req;
-};
-
-/**
- * PATCH `url` with optional `data` and callback `fn(res)`.
- *
- * @param {String} url
- * @param {Mixed} data
- * @param {Function} fn
- * @return {Request}
- * @api public
- */
-
-request.patch = function(url, data, fn){
-  var req = request('PATCH', url);
-  if ('function' == typeof data) fn = data, data = null;
-  if (data) req.send(data);
-  if (fn) req.end(fn);
-  return req;
-};
-
-/**
- * POST `url` with optional `data` and callback `fn(res)`.
- *
- * @param {String} url
- * @param {Mixed} data
- * @param {Function} fn
- * @return {Request}
- * @api public
- */
-
-request.post = function(url, data, fn){
-  var req = request('POST', url);
-  if ('function' == typeof data) fn = data, data = null;
-  if (data) req.send(data);
-  if (fn) req.end(fn);
-  return req;
-};
-
-/**
- * PUT `url` with optional `data` and callback `fn(res)`.
- *
- * @param {String} url
- * @param {Mixed|Function} data or fn
- * @param {Function} fn
- * @return {Request}
- * @api public
- */
-
-request.put = function(url, data, fn){
-  var req = request('PUT', url);
-  if ('function' == typeof data) fn = data, data = null;
-  if (data) req.send(data);
-  if (fn) req.end(fn);
-  return req;
-};
-
-/**
- * Expose `request`.
- */
-
-module.exports = request;
-
-
-/***/ },
-/* 2 */
-/***/ function(module, exports, __webpack_require__) {
-
-
-/**
- * Expose `Emitter`.
- */
-
-module.exports = Emitter;
-
-/**
- * Initialize a new `Emitter`.
- *
- * @api public
- */
-
-function Emitter(obj) {
-  if (obj) return mixin(obj);
-};
-
-/**
- * Mixin the emitter properties.
- *
- * @param {Object} obj
- * @return {Object}
- * @api private
- */
-
-function mixin(obj) {
-  for (var key in Emitter.prototype) {
-    obj[key] = Emitter.prototype[key];
-  }
-  return obj;
-}
-
-/**
- * Listen on the given `event` with `fn`.
- *
- * @param {String} event
- * @param {Function} fn
- * @return {Emitter}
- * @api public
- */
-
-Emitter.prototype.on =
-Emitter.prototype.addEventListener = function(event, fn){
-  this._callbacks = this._callbacks || {};
-  (this._callbacks[event] = this._callbacks[event] || [])
-    .push(fn);
-  return this;
-};
-
-/**
- * Adds an `event` listener that will be invoked a single
- * time then automatically removed.
- *
- * @param {String} event
- * @param {Function} fn
- * @return {Emitter}
- * @api public
- */
-
-Emitter.prototype.once = function(event, fn){
-  var self = this;
-  this._callbacks = this._callbacks || {};
-
-  function on() {
-    self.off(event, on);
-    fn.apply(this, arguments);
-  }
-
-  on.fn = fn;
-  this.on(event, on);
-  return this;
-};
-
-/**
- * Remove the given callback for `event` or all
- * registered callbacks.
- *
- * @param {String} event
- * @param {Function} fn
- * @return {Emitter}
- * @api public
- */
-
-Emitter.prototype.off =
-Emitter.prototype.removeListener =
-Emitter.prototype.removeAllListeners =
-Emitter.prototype.removeEventListener = function(event, fn){
-  this._callbacks = this._callbacks || {};
-
-  // all
-  if (0 == arguments.length) {
-    this._callbacks = {};
-    return this;
-  }
-
-  // specific event
-  var callbacks = this._callbacks[event];
-  if (!callbacks) return this;
-
-  // remove all handlers
-  if (1 == arguments.length) {
-    delete this._callbacks[event];
-    return this;
-  }
-
-  // remove specific handler
-  var cb;
-  for (var i = 0; i < callbacks.length; i++) {
-    cb = callbacks[i];
-    if (cb === fn || cb.fn === fn) {
-      callbacks.splice(i, 1);
-      break;
-    }
-  }
-  return this;
-};
-
-/**
- * Emit `event` with the given args.
- *
- * @param {String} event
- * @param {Mixed} ...
- * @return {Emitter}
- */
-
-Emitter.prototype.emit = function(event){
-  this._callbacks = this._callbacks || {};
-  var args = [].slice.call(arguments, 1)
-    , callbacks = this._callbacks[event];
-
-  if (callbacks) {
-    callbacks = callbacks.slice(0);
-    for (var i = 0, len = callbacks.length; i < len; ++i) {
-      callbacks[i].apply(this, args);
-    }
-  }
-
-  return this;
-};
-
-/**
- * Return array of callbacks for `event`.
- *
- * @param {String} event
- * @return {Array}
- * @api public
- */
-
-Emitter.prototype.listeners = function(event){
-  this._callbacks = this._callbacks || {};
-  return this._callbacks[event] || [];
-};
-
-/**
- * Check if this emitter has `event` handlers.
- *
- * @param {String} event
- * @return {Boolean}
- * @api public
- */
-
-Emitter.prototype.hasListeners = function(event){
-  return !! this.listeners(event).length;
-};
-
-
-/***/ },
-/* 3 */
-/***/ function(module, exports, __webpack_require__) {
-
-
-/**
- * Reduce `arr` with `fn`.
- *
- * @param {Array} arr
- * @param {Function} fn
- * @param {Mixed} initial
- *
- * TODO: combatible error handling?
- */
-
-module.exports = function(arr, fn, initial){  
-  var idx = 0;
-  var len = arr.length;
-  var curr = arguments.length == 3
-    ? initial
-    : arr[idx++];
-
-  while (idx < len) {
-    curr = fn.call(null, curr, arr[idx], ++idx, arr);
-  }
-  
-  return curr;
-};
-
-/***/ }
-/******/ ])
-//# sourceMappingURL=clerk.js.map

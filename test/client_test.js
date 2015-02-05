@@ -1,8 +1,6 @@
 "use strict";
 
-var browser = typeof window != "undefined";
-
-var clerk = require(browser ? "../lib/clerk" : "../index");
+var clerk = require(typeof window != "undefined" ? "../clerk" : "..");
 var expect = require("expect.js");
 var shared = require("./shared");
 
