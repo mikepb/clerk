@@ -23,14 +23,14 @@ limitations under the License.
  * Module dependencies.
  */
 
-var crypto = require("crypto");
+var clerk = require("./clerk");
 var follow = require("follow");
 
 /**
  * Node.js compatible follow method, based on `follow` package.
  */
 
-module.exports = function (/* [query], [headers], [callback] */) {
+clerk.follow = function (/* [query], [headers], [callback] */) {
   var self = this;
   var request = self._(arguments);
   var options = request.q;
@@ -55,3 +55,9 @@ module.exports = function (/* [query], [headers], [callback] */) {
 
   return self;
 };
+
+/**
+ * Export clerk.
+ */
+
+module.exports = clerk;

@@ -23,8 +23,6 @@ limitations under the License.
  * Module dependencies.
  */
 
-var buffer = require("buffer");
-var follow = require("./follow");
 var request = require("superagent");
 
 /**
@@ -171,14 +169,10 @@ clerk.make = function (uri) {
  * @return {String}
  */
 
-clerk.btoa = function (str) {
-  if (typeof btoa == "function") {
-    return btoa(str);
-  } else if (buffer && buffer.Buffer) {
-    return new buffer.Buffer(str).toString('base64');
-  } else {
-    throw new Error('btoa not available');
-  }
+clerk.btoa = typeof Buffer != "undefined" ? function (str) {
+  return new Buffer(str).toString("base64");
+} : function (str) {
+  return btoa(str);
 };
 
 /**
@@ -1041,7 +1035,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    * @see `#changes()`.
    */
 
-  follow: follow || function (/* [query], [headers], callback */) {
+  follow: function (/* [query], [headers], callback */) {
     var request = this._(arguments);
     var fn = request.f;
 

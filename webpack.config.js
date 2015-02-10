@@ -10,13 +10,11 @@ exports = module.exports = {
     libraryTarget: "this",
     sourcePrefix: ""
   },
-  externals: [
-    {
-      "sinon": "sinon",
-      "buffer": "",
-      "follow": "",
-      "./follow": ""
-    }
-  ],
-  devtool: "source-map"
+  externals: [{
+    "sinon": "sinon"
+  }],
+  devtool: "source-map",
+  node: {
+    Buffer: false
+  }
 };
