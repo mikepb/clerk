@@ -121,7 +121,7 @@ var clerk = function (uri) {
  * Library version.
  */
 
-clerk.version = "0.7.0";
+clerk.version = "0.7.1";
 
 /**
  * Default host.

@@ -70,9 +70,7 @@ limitations under the License.
  * Module dependencies.
  */
 
-var buffer = __webpack_require__(1);
-var follow = __webpack_require__(1);
-var request = __webpack_require__(2);
+var request = __webpack_require__(1);
 
 /**
  * Copy properties from sources to target.
@@ -170,7 +168,7 @@ var clerk = function (uri) {
  * Library version.
  */
 
-clerk.version = "0.7.0";
+clerk.version = "0.7.1";
 
 /**
  * Default host.
@@ -218,14 +216,10 @@ clerk.make = function (uri) {
  * @return {String}
  */
 
-clerk.btoa = function (str) {
-  if (typeof btoa == "function") {
-    return btoa(str);
-  } else if (buffer && buffer.Buffer) {
-    return new buffer.Buffer(str).toString('base64');
-  } else {
-    throw new Error('btoa not available');
-  }
+clerk.btoa = typeof Buffer != "undefined" ? function (str) {
+  return new Buffer(str).toString("base64");
+} : function (str) {
+  return btoa(str);
 };
 
 /**
@@ -1088,7 +1082,7 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    * @see `#changes()`.
    */
 
-  follow: follow || function (/* [query], [headers], callback */) {
+  follow: function (/* [query], [headers], callback */) {
     var request = this._(arguments);
     var fn = request.f;
 
@@ -1286,18 +1280,12 @@ module.exports = clerk;
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
-(function() { module.exports = this[""]; }());
-
-/***/ },
-/* 2 */
-/***/ function(module, exports, __webpack_require__) {
-
 /**
  * Module dependencies.
  */
 
-var Emitter = __webpack_require__(3);
-var reduce = __webpack_require__(4);
+var Emitter = __webpack_require__(2);
+var reduce = __webpack_require__(3);
 
 /**
  * Root reference for iframes.
@@ -2376,7 +2364,7 @@ module.exports = request;
 
 
 /***/ },
-/* 3 */
+/* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
 
@@ -2546,7 +2534,7 @@ Emitter.prototype.hasListeners = function(event){
 
 
 /***/ },
-/* 4 */
+/* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
 
