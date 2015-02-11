@@ -16,7 +16,8 @@
     },
     "default": {
       "outputSourceFiles": true
-    }
+    },
+    "linenums": true
   },
   "opts": {
     "destination": "docs"
