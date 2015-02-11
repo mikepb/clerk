@@ -4,8 +4,8 @@ var clerk = require("../clerk");
 var expect = require("expect.js");
 
 exports.clerkFactory = function () {
-  this.baseURL = "http://test:xyzzy@127.0.0.1:5984";
-  this.dbname = "clerk-test-" + (1000000 * Math.random() | 0);
+  this.baseURL = "http://127.0.0.1:5984";
+  this.dbname = "clerk-test-" + (1000 * Math.random() | 0);
   this.client = clerk(this.baseURL);
   this.db = this.client.db(this.dbname);
 };
