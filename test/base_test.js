@@ -18,6 +18,24 @@ describe("Base", function () {
       });
     });
 
+    if (typeof Promise != "undefined") describe("with promises", function () {
+
+      it("should return a promise", function () {
+        var promise = this.client.request("GET");
+        expect(promise).to.be.a(Promise);
+        return promise;
+      });
+
+      it("should abort a request", function () {
+        var promise = this.client.request("GET");
+        expect(promise).to.be.a(Promise);
+        return promise.abort().catch(function (err) {
+          expect(err).to.have.property("message", "abort");
+        });
+      });
+
+    });
+
   });
 
 });

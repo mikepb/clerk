@@ -6,17 +6,27 @@ CouchDB library for node and the browser and sister project to [sage][]
 var clerk = require('clerk');
 
 var client = clerk('http://127.0.0.1:5984');
-
 var db = client.db('test');
 
-db.info(function(err, info) {
-  console.dir(err || info);
+db.info(function (err, info) {
+  console.log(err || info);
+});
+
+// if a Promise implementation is available, you may leave out the callback
+var promise = db.info()
+promise.then(function (info) {
+  console.log(info);
+}).catch(function (err) {
+  console.log(err);
 });
 ```
 
 ## Documentation
 
 Full documentation at http://mikepb.github.io/clerk/
+
+For more information about promises, see 
+[this Mozilla documentation][promises].
 
 ## Installation
 
@@ -106,5 +116,6 @@ limitations under the License.
 [couchdb_cors]: http://docs.couchdb.org/en/latest/config/http.html#cross-origin-resource-sharing
 [karma]: http://karma-runner.github.io
 [mocha]: http://mochajs.org
+[promises]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
 [sage]: https://github.com/mikepb/sage
 [superagent]: https://github.com/visionmedia/superagent

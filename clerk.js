@@ -249,6 +249,8 @@ Base.prototype.request = function (/* [method], [path], [query], [body], [header
  */
 
 Base.prototype._request = function (options) {
+  var self = this;
+
   if (options.method == null) options.method = "GET";
   if (options.headers == null) options.headers = {};
   if (options.auth == null) options.auth = this.auth;
@@ -272,47 +274,50 @@ Base.prototype._request = function (options) {
   ) || "";
 
   // create promise if no callback given
-  var promise;
-  var fn = options.fn;
-  if (!fn && typeof Promise != "undefined") {
-    promise = Promise.defer();
-    fn = function (err, data, status, headers, res) {
-      if (err) {
-        err.body = data;
-        err.status = status;
-        err.headers = headers;
-        err.res = res;
-        promise.reject(err);
-      } else {
-        if (Object.defineProperties) {
-          Object.defineProperties(data, {
-            _status: { value: status },
-            _headers: { value: headers },
-            _response: { value: res },
-          });
-        }
-        promise.resolve(data);
+  var promise, req;
+  if (!options.fn && typeof Promise != "undefined") {
+    promise = new Promise(function (resolve, reject) {
+      options.fn = function (err, data, status, headers, res) {
+        if (err) {
+          err.body = data;
+          err.status = status;
+          err.headers = headers;
+          err.res = res;
+          reject(err);
+        } else {
+          if (Object.defineProperties) {
+            Object.defineProperties(data, {
+              _status: { value: status },
+              _headers: { value: headers },
+              _response: { value: res },
+            });
+          }
+          resolve(data);
+        };
       };
-    };
-  }
-
-  // apply response transforms
-  var g = options._;
-  if (fn) {
-    options.fn = g ? function () {
-      fn.apply(this, g.apply(this, arguments) || arguments);
-    } : fn;
-  }
-
-  var req = this._do(options);
-
-  // return promise if it was created
-  if (promise) {
-    promise.promise.request = req;
-    promise.promise.abort = function () {
+    });
+    req = send();
+    promise.request = req;
+    promise.abort = function () {
       req.abort();
+      options.fn(new Error("abort"));
+      return promise;
     };
-    return promise.promise;
+    return promise;
+  }
+
+  send();
+
+  function send () {
+    // apply response transforms
+    var g = options._;
+    var fn = options.fn;
+    if (fn) {
+      options.fn = g ? function () {
+        fn.apply(self, g.apply(self, arguments) || arguments);
+      } : fn;
+    }
+    return self._do(options);
   }
 };
 
@@ -372,6 +377,8 @@ Base.prototype._do = function (options) {
       else if (data.error) err = self._error(data);
       else data = self._response(data);
     }
+
+    res.data = data;
 
     fn && fn(err || null, data, res.status, res.header, res);
   });
