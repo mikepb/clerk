@@ -309,6 +309,9 @@ Base.prototype._request = function (options) {
   // return promise if it was created
   if (promise) {
     promise.promise.request = req;
+    promise.promise.abort = function () {
+      req.abort();
+    };
     return promise.promise;
   }
 };
