@@ -14,6 +14,10 @@ db.info(function(err, info) {
 });
 ```
 
+## Documentation
+
+Full documentation at http://mikepb.github.io/clerk/
+
 ## Installation
 
 ```sh

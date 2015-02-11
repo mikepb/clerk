@@ -2,10 +2,22 @@
   "source": {
     "include": [
       "clerk.js",
+      "package.json",
       "README.md"
     ]
   },
   "plugins": ["plugins/markdown"],
+  "templates": {
+    "applicationName": "clerk",
+    "meta": {
+      "title": "clerk",
+      "description": "clerk - CouchDB library for node and the browser",
+      "keyword": "clerk couchdb"
+    },
+    "default": {
+      "outputSourceFiles": true
+    }
+  },
   "opts": {
     "destination": "docs"
   }
