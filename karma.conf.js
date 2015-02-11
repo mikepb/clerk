@@ -19,7 +19,7 @@ module.exports = function (config) {
 
     reporters: ["progress"],
 
-    browsers: ["Chrome"],
+    browsers: ["Chrome", "Firefox"],
 
     webpack: require("./webpack.config"),
 

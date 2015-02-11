@@ -1070,6 +1070,7 @@ DB.prototype.changes = function (/* [query], [headers], [callback] */) {
  */
 
 DB.prototype.follow = function (/* [query], [headers], callback */) {
+  var self = this;
   var request = this._(arguments);
   var fn = request.f;
 
@@ -1081,9 +1082,9 @@ DB.prototype.follow = function (/* [query], [headers], callback */) {
     var done, i;
     for (i = 0; i < body.length; i++) {
       args[1] = body[i];
-      if (done = fn.apply(this, args) === false || err) break;
+      if (done = fn.apply(self, args) === false || err) break;
     }
-    if (!done) this._changes(request);
+    if (!done) self._changes(request);
   };
 
   return this._changes(request);

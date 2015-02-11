@@ -5,53 +5,21 @@ var expect = require("expect.js");
 var shared = require("./shared");
 
 describe("DB", function () {
-
   before(shared.clerkFactory);
-  before(shared.forceDestroyDB);
 
   describe("#create", function () {
-    afterEach(shared.forceDestroyDB);
-
-    it("should create database", function (done) {
-      this.db.create(function (err, body, status, headers, res) {
-        if (!err) {
-          shared.shouldBeOk(body);
-        }
-        done(err);
-      });
-    });
-
-  });
-
-  describe("#destroy", function () {
-    beforeEach(shared.createDB);
-
-    it("should destroy database", function (done) {
-      this.db.destroy(function (err, body, status, headers, res) {
-        if (!err) {
-          shared.shouldBeOk(body);
-        }
-        done(err);
-      });
-    });
-
+    it("should create database", shared.createDB("db"));
   });
 
   describe("#replicate", function () {
-    before(shared.createDB);
-    after(shared.destroyDB);
 
     before(function () {
-      this.replica = this.client.db("clerk-replicate-test");
+      this.replica = this.client.db(this.dbname + "-replica");
     });
 
-    beforeEach(function (done) {
-      this.replica.create(done);
-    });
-
-    afterEach(function (done) {
-      this.replica.destroy(done);
-    });
+    before(shared.createDB("db"));
+    before(shared.createDB("replica"));
+    after(shared.destroyDB("replica"));
 
     it("should be ok", function (done) {
       var options = {
@@ -69,8 +37,6 @@ describe("DB", function () {
   });
 
   describe("utils", function () {
-    before(shared.createDB);
-    after(shared.destroyDB);
 
     describe("#exists", function () {
       it("should be true", function (done) {
@@ -150,9 +116,7 @@ describe("DB", function () {
   });
 
   describe("putting documents", function () {
-    beforeEach(shared.createDB);
     beforeEach(shared.docFactory);
-    afterEach(shared.destroyDB);
 
     describe("#post", function () {
       it("should store document", function (done) {
@@ -184,10 +148,8 @@ describe("DB", function () {
   });
 
   describe("getting documents", function () {
-    before(shared.createDB);
     before(shared.docFactory);
     before(putDocument);
-    after(shared.destroyDB);
 
     describe("#get", function () {
       it("should return document", function (done) {
@@ -219,10 +181,8 @@ describe("DB", function () {
   });
 
   describe("updating documents", function () {
-    beforeEach(shared.createDB);
     beforeEach(shared.docFactory);
     beforeEach(putDocument);
-    afterEach(shared.destroyDB);
 
     describe("#post", function () {
       it("should return document metadata", function (done) {
@@ -254,26 +214,25 @@ describe("DB", function () {
     describe("#copy", function () {
 
       it("should copy id to id", function (done) {
-        shouldCopy.call(this, done, this.doc._id, "1", "1", "1-095d0517d4ee0271cc517163c4e465ff");
+        var id = shared.randomId();
+        shouldCopy.call(this, done, this.doc._id, id, id, "1-");
       });
 
       it("should copy doc to id", function (done) {
-        shouldCopy.call(this, done, this.doc, "1", "1", "1-095d0517d4ee0271cc517163c4e465ff");
+        var id = shared.randomId();
+        shouldCopy.call(this, done, this.doc, id, id, "1-");
       });
 
       it("should copy doc to doc", function (done) {
-        var target = {
-          _id: "1"
-        };
-        shouldCopy.call(this, done, this.doc, target, target._id, "1-095d0517d4ee0271cc517163c4e465ff");
+        var id = shared.randomId();
+        var target = { _id: id };
+        shouldCopy.call(this, done, this.doc, target, target._id, "1-");
       });
 
       it("should copy doc to doc with rev", function (done) {
-        var target = {
-          _id: "1",
-          _rev: this.doc._rev
-        };
-        shouldCopy.call(this, done, this.doc, target, target._id, "2-92c76f94974bbbb524cf9e18aedd3572");
+        var id = shared.randomId();
+        var target = { _id: id, _rev: this.doc._rev };
+        shouldCopy.call(this, done, this.doc, target, target._id, "2-");
       });
 
       function shouldCopy(done, source, target, id, rev) {
@@ -296,23 +255,20 @@ describe("DB", function () {
 
   describe("batch", function () {
     before(shared.docFactory);
-    beforeEach(shared.createDB);
-    afterEach(shared.destroyDB);
 
     describe("#post", function () {
       it("should be ok", function (done) {
         var docs = this.docs;
         this.db.post(docs, function (err, body, status, headers, res) {
-          var i = 0,
-            len, item, doc;
+          var i = 0, j, len, item, doc;
           if (!err) {
-            expect(body).to.be.an("array");
-            expect(body).to.have.length(9);
             for (len = body.length; i < len; i++) {
               item = body[i], doc = docs[i];
-              shared.shouldBeOk(item);
-              shouldHaveIdRev(item, doc._id, item._rev);
+              expect(item).to.have.property("id", doc._id);
+              expect(item).to.have.property("rev");
+              doc._rev = item.rev;
             }
+            shared.shouldBeOk(item);
             shared.shouldHave2xxStatus(status);
           }
           done(err);
@@ -321,9 +277,6 @@ describe("DB", function () {
     });
 
     describe("#del", function () {
-
-      beforeEach(bulkDocuments);
-
       it("should be ok", function (done) {
         var docs = this.docs;
         this.db.del(docs, function (err, body, status, headers, res) {
@@ -340,33 +293,27 @@ describe("DB", function () {
           done(err);
         });
       });
-
     });
 
   });
 
   describe("querying documents", function () {
-    before(shared.createDB);
-    before(shared.docFactory);
-    before(bulkDocuments);
-    after(shared.destroyDB);
 
     describe("#all", function () {
 
       it("should return metadata", function (done) {
-        var docs = this.docs;
         this.db.all(function (err, body, status, headers, res) {
-          var i = 0,
-            len, item, doc;
+          var i = 0, len, item;
           if (!err) {
             expect(body).to.have.property("rows");
-            expect(body).to.have.property("total_rows", 9);
+            expect(body).to.have.property("total_rows");
+            expect(body.total_rows).greaterThan(0);
             expect(body).to.have.property("offset", 0);
             for (len = body.length; i < len; i++) {
-              item = body[i], doc = docs[i];
-              expect(item).to.have.property("id", doc._id);
-              expect(item).to.have.property("key", doc._id);
-              expect(item.value).to.have.property("rev", doc._rev);
+              item = body[i];
+              expect(item).to.have.property("id");
+              expect(item).to.have.property("key");
+              expect(item.value).to.have.property("rev");
             }
             shared.shouldHave2xxStatus(status);
           }
@@ -375,23 +322,25 @@ describe("DB", function () {
       });
 
       it("should return documents", function (done) {
-        var docs = this.docs;
         this.db.all({
           include_docs: true
         }, function (err, body, status, headers, res) {
-          var i = 0,
-            len, item, doc;
+          var i = 0, len, item;
           if (!err) {
             expect(body).to.have.property("rows");
-            expect(body).to.have.property("total_rows", 9);
+            expect(body).to.have.property("total_rows");
+            expect(body.total_rows).greaterThan(0);
             expect(body).to.have.property("offset", 0);
             for (len = body.length; i < len; i++) {
-              item = body[i], doc = docs[i];
-              expect(item).to.have.property("id", doc._id);
-              expect(item).to.have.property("key", doc._id);
-              expect(item.value).to.have.property("rev", doc._rev);
-              shouldHaveIdRev(item.doc, doc._id, doc._rev);
-              expect(item.doc).to.have.property("hello", doc.hello);
+              item = body[i];
+              expect(item).to.have.property("id");
+              expect(item).to.have.property("key", item.id);
+              expect(item.value).to.have.property("rev");
+              expect(item.doc).to.have.property("_id");
+              expect(item.doc).to.have.property("_rev");
+              if (/^clerk-test-/.test(item.id)) {
+                expect(item.doc).to.have.property("hello");
+              }
             }
             shared.shouldHave2xxStatus(status);
           }
@@ -408,9 +357,7 @@ describe("DB", function () {
   });
 
   describe("realtime", function () {
-    beforeEach(shared.createDB);
     beforeEach(shared.docFactory);
-    afterEach(shared.destroyDB);
 
     describe("#changes", function () {
       it("should get changes", function (done) {
@@ -422,10 +369,11 @@ describe("DB", function () {
             if (!err) {
               expect(body).to.have.property("results");
               expect(body).to.be.an("array");
-              expect(body).to.have.length(1);
-              expect(body[0]).to.have.property("changes");
-              expect(body[0].changes).to.be.an("array");
-              expect(body[0].changes[0]).to.have.property("rev", doc._rev);
+              expect(body.length).to.be.greaterThan(0);
+              var changes = body[body.length - 1];
+              expect(changes).to.have.property("changes");
+              expect(changes.changes).to.be.an("array");
+              expect(changes.changes[0]).to.have.property("rev", doc._rev);
               shared.shouldHave2xxStatus(status);
             }
             done(err);
@@ -436,11 +384,13 @@ describe("DB", function () {
 
     describe("#follow", function () {
       it("should follow changes", function (done) {
-        var db = this.db,
-          docs = this.docs;
+        var db = this.db;
+        var docs = this.docs;
 
         db.follow(function (err, body, status) {
           if (err) return done(err);
+          if (body.id != docs[0]._id) return;
+
           var doc = docs.shift();
 
           expect(body).to.have.property("id", doc._id);
@@ -463,6 +413,21 @@ describe("DB", function () {
   });
 
   describe("#update", function () {
+    xit("should use an update handler", function () {
+    });
+  });
+
+
+  describe("#destroy", function () {
+
+    it("should destroy database", function (done) {
+      this.db.destroy(function (err, body, status, headers, res) {
+        if (!err) {
+          shared.shouldBeOk(body);
+        }
+        done(err);
+      });
+    });
 
   });
 

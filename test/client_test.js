@@ -141,62 +141,23 @@ describe("Client", function () {
     });
 
     it("shoud return server config value", function (done) {
-      this.client.config("couchdb/database_dir", function (err, body, status, headers, res) {
+      var self = this;
+      this.client.config("log/level", function (err, body, status, headers, res) {
         if (!err) {
           expect(body).to.be.a("string");
           shared.shouldHave2xxStatus(status);
+          self.value = body;
         }
         done(err);
       });
     });
 
-    describe("changing config value", function () {
-
-      beforeEach(function (done) {
-        this.client.config("log/level", "debug", function (err, body, status, headers, res) {
-          if (!err) {
-            shared.shouldHave2xxStatus(status);
-          }
-          done(err);
-        });
-      });
-
-      beforeEach(function (done) {
-        this.client.config("log/level", function (err, body, status, headers, res) {
-          if (!err) {
-            expect(body).to.be("debug");
-            shared.shouldHave2xxStatus(status);
-          }
-          done(err);
-        });
-      });
-
-      afterEach(function (done) {
-        this.client.config("log/level", "error", function (err, body, status, headers, res) {
-          if (!err) {
-            shared.shouldHave2xxStatus(status);
-          }
-          done(err);
-        });
-      });
-
-      afterEach(function (done) {
-        this.client.config("log/level", function (err, body, status, headers, res) {
-          if (!err) {
-            expect(body).to.be("error");
-            shared.shouldHave2xxStatus(status);
-          }
-          done(err);
-        });
-      });
-
-      it("shoud set server config value", function (done) {
-        this.client.config("log/level", "debug", function (err, body, status, headers, res) {
-          if (!err) {
-            shared.shouldHave2xxStatus(status);
-          }
-          done(err);
-        });
+    it("shoud set server config value", function (done) {
+      this.client.config("log/level", this.value, function (err, body, status, headers, res) {
+        if (!err) {
+          shared.shouldHave2xxStatus(status);
+        }
+        done(err);
       });
     });
 
@@ -204,28 +165,13 @@ describe("Client", function () {
 
   describe("#replicate", function () {
 
-    beforeEach(function () {
-      this.db = this.client.db(this.dbname);
-      this.replica = this.client.db("clerk-replicate-test");
+    before(function () {
+      this.replica = this.client.db(this.dbname + "-client-replica");
     });
 
-    beforeEach(shared.forceDestroyDB);
-
-    beforeEach(function (done) {
-      this.db.create(done);
-    });
-
-    beforeEach(function (done) {
-      this.replica.create(done);
-    });
-
-    afterEach(function (done) {
-      this.replica.destroy(done);
-    });
-
-    afterEach(function (done) {
-      this.db.destroy(done);
-    });
+    before(shared.createDB("db"));
+    before(shared.createDB("replica"));
+    after(shared.destroyDB("replica"));
 
     it("shoud be ok", function (done) {
       var options = {
