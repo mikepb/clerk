@@ -1,3 +1,12 @@
+0.7.2 / 2015-02-11
+==================
+
+  * Add `abort` method to returned promises
+  * Update tests to allow for parallelization
+  * Fix a bug in the follow handler
+  * Document use with promises
+
+
 0.7.1 / 2015-02-09
 ==================
 
