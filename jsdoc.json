@@ -1,0 +1,12 @@
+{
+  "source": {
+    "include": [
+      "clerk.js",
+      "README.md"
+    ]
+  },
+  "plugins": ["plugins/markdown"],
+  "opts": {
+    "destination": "docs"
+  }
+}

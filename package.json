@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "expect.js": "*",
+    "jsdoc": "*",
     "karma": "*",
     "karma-chrome-launcher": "*",
     "karma-firefox-launcher": "*",
@@ -33,6 +34,7 @@
   "scripts": {
     "test": "mocha --reporter dot",
     "dist": "webpack clerk.js dist/clerk.js && webpack --optimize-minimize clerk.js dist/clerk.min.js",
-    "karma": "karma start --single-run --browsers Chrome && karma start --single-run --browsers Firefox"
+    "karma": "karma start --single-run --browsers Chrome && karma start --single-run --browsers Firefox",
+    "doc": "jsdoc -c jsdoc.json"
   }
 }

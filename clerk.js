@@ -19,7 +19,7 @@ limitations under the License.
 
 */
 
-/**
+/*
  * Module dependencies.
  */
 
@@ -29,12 +29,12 @@ var request = require("superagent");
  * Copy properties from sources to target.
  *
  * @param {Object} target The target object.
- * @param {Object...} sources The source object.
+ * @param {...Object} sources The source object.
  * @return {Object} The target object.
- * @api private
+ * @private
  */
 
-var extend = function (target /* sources.. */) {
+var extend = function (target /* ...sources */) {
   var source, key, i = 1;
   while (source = arguments[i++]) {
     for (key in source) target[key] = source[key];
@@ -47,7 +47,7 @@ var extend = function (target /* sources.. */) {
  *
  * @param {Object} that That value to stringify.
  * @return {String} The stringifyed value.
- * @api private
+ * @private
  */
 
 var asString = function (that) {
@@ -59,7 +59,7 @@ var asString = function (that) {
  *
  * @param {Object} that That value to check.
  * @return {Boolean} `true` if string, `false` otherwise.
- * @api private
+ * @private
  */
 
 var isString = function (that) {
@@ -71,7 +71,7 @@ var isString = function (that) {
  *
  * @param {Object} that That value to check.
  * @return {Boolean} `true` if object, `false` otherwise.
- * @api private
+ * @private
  */
 
 var isObject = function (that) {
@@ -83,7 +83,7 @@ var isObject = function (that) {
  *
  * @param {Object} that That value to check.
  * @return {Boolean} `true` if array, `false` otherwise.
- * @api private
+ * @private
  */
 
 var isArray = function (that) {
@@ -95,7 +95,7 @@ var isArray = function (that) {
  *
  * @param {Object} that That value to check.
  * @return {Boolean} `true` if function, `false` otherwise.
- * @api private
+ * @private
  */
 
 var isFunction = function (that) {
@@ -108,9 +108,9 @@ var isFunction = function (that) {
  * @param {String} servers CouchDB server URI.
  * @return {Client|DB} If a URI path is given, returns a `DB`, otherwise
  *   returns a `Client`.
- * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/)
- * @see [CouchDB Guide](http://guide.couchdb.org/)
- * @see [Couchbase 2.0](http://www.couchbase.com/docs/couchbase-single-server-2.0/)
+ * @see {@link http://docs.couchdb.org|CouchDB Documentation}
+ * @see {@link http://guide.couchdb.org/|CouchDB Guide}
+ * @see {@link http://wiki.apache.org/couchdb/|CouchDB Wiki}
  */
 
 var clerk = function (uri) {
@@ -203,6 +203,8 @@ clerk._parseURI = function (uri) {
 /**
  * Base prototype for `Client` and `DB`.
  * Encapsulates HTTP methods, JSON handling, and response coersion.
+ *
+ * @constructor
  */
 
 clerk.Base = function () {};
@@ -212,20 +214,17 @@ clerk.Base.prototype = {
   /**
    * Service request and parse JSON response.
    *
-   * @param {String} [method=""GET""] HTTP method.
+   * @param {String} [method=GET] HTTP method.
    * @param {String} [path=this.uri] HTTP URI.
    * @param {Object} [query] HTTP query options.
    * @param {Object} [body] HTTP body.
    * @param {Object} [headers] HTTP headers.
-   * @param {Function} [callback] Callback function.
-   *   @param {Error|null} error Error or `null` on success.
-   *   @param {Object} data Response data.
-   *   @param {Integer} status Response status code.
-   *   @param {Object} headers Response headers.
-   * @return {Promise} If no callback is provided, a Promise is returned.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
    */
 
-  request: function (/* [method], [path], [query], [data], [headers], [callback] */) {
+  request: function (/* [method], [path], [query], [body], [headers], [callback] */) {
     var args = [].slice.call(arguments);
     var callback = isFunction (args[args.length - 1]) && args.pop();
 
@@ -248,12 +247,8 @@ clerk.Base.prototype = {
    *   @param {Object} query HTTP query options.
    *   @param {Object} data HTTP body data.
    *   @param {Object} headers HTTP headers.
-   *   @param {Function} fn Callback function.
-   *     @param {Error|null} error Error or `null` on success.
-   *     @param {Object} data Response data.
-   *     @param {Integer} status Response status code.
-   *     @param {Object} headers Response headers.
-   * @api private
+   * @param {handler} [callback] Callback function.
+   * @private
    */
 
   _request: function (options) {
@@ -331,12 +326,8 @@ clerk.Base.prototype = {
    *   @param {Object} body HTTP body.
    *   @param {Object} headers HTTP headers.
    *   @param {Object} auth HTTP authentication.
-   *   @param {Function} fn Callback function.
-   *     @param {Error|null} error Error or `null` on success.
-   *     @param {Object} data Response data.
-   *     @param {Integer} status Response status code.
-   *     @param {Object} headers Response headers.
-   * @api private
+   * @param {handler} [callback] Callback function.
+   * @private
    */
 
   _do: function (options) {
@@ -393,7 +384,7 @@ clerk.Base.prototype = {
    *
    * @param {Object} json The response JSON.
    * @return The coerced JSON.
-   * @api private
+   * @private
    */
 
   _response: function (json) {
@@ -419,7 +410,7 @@ clerk.Base.prototype = {
    *
    * @param {Object} json The response JSON.
    * @return An `Error` object.
-   * @api private
+   * @private
    */
 
   _error: function (json) {
@@ -434,7 +425,7 @@ clerk.Base.prototype = {
    * @param {String} key The key to stringify.
    * @param {Object} val The value to stringify.
    * @return {Object} The stringified function value or the value.
-   * @api private
+   * @private
    */
 
   _replacer: function (key, val) {
@@ -447,7 +438,7 @@ clerk.Base.prototype = {
    *
    * @param {Object} doc The document to coerce.
    * @return {Object} The coerced document.
-   * @api private
+   * @private
    */
 
   _meta: function (doc) {
@@ -467,29 +458,15 @@ clerk.Base.prototype = {
   },
 
   /**
-   * HTTP headers to parse.
-   *
-   * @api private
-   */
-
-  _headers: [
-    "cache-control",
-    "content-length",
-    "content-type",
-    "date",
-    "etag",
-    "server"
-  ],
-
-  /**
    * Parse arguments.
    *
    * @param {Array} args The arguments.
    * @param {Integer} start The index from which to start reading arguments.
    * @param {Boolean} withDoc Set to `true` if the doc source is given as a
    *   parameter before HTTP query options.
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @api private
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @private
    */
 
   _: function (args, start, withDoc) {
@@ -533,7 +510,8 @@ clerk.Base.prototype = {
  *
  * @param {String} uri Fully qualified URI.
  * @param {String} [auth] Authentication header value.
- * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Complete_HTTP_API_Reference)
+ * @constructor
+ * @see {@link http://wiki.apache.org/couchdb/Complete_HTTP_API_Reference|CouchDB Wiki}
  */
 
 clerk.Client = function (uri, auth) {
@@ -549,6 +527,7 @@ clerk.Client.prototype = extend(new clerk.Base(), {
    *
    * @param {String} name DB name.
    * @return {DB} DB object.
+   * @memberof clerk.Client
    */
 
   db: function (name) {
@@ -559,8 +538,13 @@ clerk.Client.prototype = extend(new clerk.Base(), {
   /**
    * List all databases.
    *
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetAllDbs)
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.Client
+   * @see {@link http://wiki.apache.org/couchdb/HttpGetAllDbs|CouchDB Wiki}
    */
 
   dbs: function (/* [query], [headers], [callback] */) {
@@ -571,8 +555,13 @@ clerk.Client.prototype = extend(new clerk.Base(), {
    * Get UUIDs.
    *
    * @param {Integer} [count=1] Number of UUIDs to get.
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetUuids)
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.Client
+   * @see {@link http://wiki.apache.org/couchdb/HttpGetUuids|CouchDB Wiki}
    */
 
   uuids: function (count /* [query], [headers], [callback] */) {
@@ -584,8 +573,13 @@ clerk.Client.prototype = extend(new clerk.Base(), {
   /**
    * Get server information.
    *
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetRoot)
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.Client
+   * @see {@link http://wiki.apache.org/couchdb/HttpGetRoot|CouchDB Wiki}
    */
 
   info: function (/* [query], [headers], [callback] */) {
@@ -595,8 +589,13 @@ clerk.Client.prototype = extend(new clerk.Base(), {
   /**
    * Get server stats.
    *
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetLog)
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.Client
+   * @see {@link http://wiki.apache.org/couchdb/HttpGetLog|CouchDB Wiki}
    */
 
   stats: function (/* [query], [headers], [callback] */) {
@@ -607,11 +606,15 @@ clerk.Client.prototype = extend(new clerk.Base(), {
    * Get tail of the server log file.
    *
    * @param {Object} [query] Query parameters.
-   *   @param {Integer} [query.bytes=1000] Number of bytes to read.
-   *   @param {Integer} [query.offset=0] Number of bytes from the end of
+   *   @param {Integer} [query.bytes] Number of bytes to read.
+   *   @param {Integer} [query.offset] Number of bytes from the end of
    *     log file to start reading.
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetLog)
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.Client
+   * @see {@link http://wiki.apache.org/couchdb/HttpGetLog|CouchDB Wiki}
    */
 
   log: function (/* [query], [headers], [callback] */) {
@@ -621,8 +624,13 @@ clerk.Client.prototype = extend(new clerk.Base(), {
   /**
    * List running tasks.
    *
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HttpGetActiveTasks)
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.Client
+   * @see {@link http://wiki.apache.org/couchdb/HttpGetActiveTasks|CouchDB Wiki}
    */
 
   tasks: function (/* [query], [headers], [callback] */) {
@@ -634,7 +642,12 @@ clerk.Client.prototype = extend(new clerk.Base(), {
    *
    * @param {String} [key] Configuration section or key.
    * @param {String} [value] Configuration value.
-   * @return {Promise} If no callback is provided, a Promise is returned.
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.Client
    */
 
   config: function (/* [key], [value], [query], [headers], [callback] */) {
@@ -661,8 +674,13 @@ clerk.Client.prototype = extend(new clerk.Base(), {
    *   @param {Object} [options.query] Query parameters for filter.
    *   @param {String[]} [options.doc_ids] Document IDs to replicate.
    *   @param {String} [options.proxy] Proxy through which to replicate.
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Replication)
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.Client
+   * @see {@link http://wiki.apache.org/couchdb/Replication|CouchDB Wiki}
    */
 
   replicate: function (options /* [query], [headers], [callback] */) {
@@ -677,6 +695,7 @@ clerk.Client.prototype = extend(new clerk.Base(), {
  * @param {Client} client Clerk client.
  * @param {String} name DB name.
  * @param {String} [auth] Authentication header value.
+ * @constructor
  * @return This object for chaining.
  */
 
@@ -692,7 +711,12 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   /**
    * Create database.
    *
-   * @return {Promise} If no callback is provided, a Promise is returned.
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
    */
 
   create: function (/* [query], [headers], [callback] */) {
@@ -702,7 +726,12 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   /**
    * Destroy database.
    *
-   * @return {Promise} If no callback is provided, a Promise is returned.
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
    */
 
   destroy: function (/* [query], [headers], [callback] */) {
@@ -712,7 +741,12 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   /**
    * Get database info.
    *
-   * @return {Promise} If no callback is provided, a Promise is returned.
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
    */
 
   info: function (/* [query], [headers], callback */) {
@@ -722,7 +756,12 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   /**
    * Check if database exists.
    *
-   * @return {Promise} If no callback is provided, a Promise is returned.
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
    */
 
   exists: function (/* [query], [headers], callback */) {
@@ -742,12 +781,12 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    * @param {Object} [query] HTTP query options.
    *   @param {Boolean} [query.revs] Fetch list of revisions.
    *   @param {Boolean} [query.revs_info] Fetch detailed revision information.
-   * @param {Function} callback Callback function.
-   *   @param {Error|null} error Error or `null` on success.
-   *   @param {Object} data Response data.
-   *   @param {Integer} status Response status code.
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#GET)
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
+   * @see {@link http://wiki.apache.org/couchdb/HTTP_Document_API#GET|CouchDB Wiki}
    */
 
   get: function (/* [id], [query], [headers], [callback] */) {
@@ -759,18 +798,12 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *
    * @param {String} id Document ID.
    * @param {Object} [query] HTTP query options.
-   * @param {Function} callback Callback function.
-   *   @param {Error|null} callback.error Error or `null` on success.
-   *   @param {Object|Object[]} [callback.body] Document metadata or array
-   *     of document metadata.
-   *     @param result.id Document ID.
-   *     @param result.rev Document revision.
-   *     @param [result.contentType] MIME content type. Only available when
-   *       getting metadata for single document.
-   *     @param [result.contentLength] Content length. Only available when
-   *       getting metadata for single document.
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#HEAD)
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
+   * @see {@link http://wiki.apache.org/couchdb/HTTP_Document_API#HEAD|CouchDB Wiki}
    */
 
   head: function (/* [id], [query], [headers], callback */) {
@@ -791,11 +824,9 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    * Post document(s) to database.
    *
    * If documents have no ID, a document ID will be automatically generated
-   * on the server. If attachments are given, they will be automatically
-   * Base64 encoded. Streamed attachments are not supported. Attachments are
-   * only supported on Node.js.
+   * on the server. Attachments are not currently supported.
    *
-   * @param {Object} doc Document.
+   * @param {Object|Object[]} doc Document or array of documents.
    *   @param {String} [doc._id] Document ID. If set, uses given document ID.
    *   @param {String} [doc._rev] Document revision. If set, allows update to
    *     existing document.
@@ -813,9 +844,13 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *     increasing the chances of write failure.
    *   @param {Boolean} [query.all_or_nothing] For batch updating of
    *     documents, use all-or-nothing semantics.
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#POST)
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
+   * @see {@link http://wiki.apache.org/couchdb/HTTP_Document_API#POST|CouchDB Wiki}
+   * @see {@link http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API|CouchDB Wiki}
    */
 
   post: function (docs /* [query], [headers], [callback] */) {
@@ -833,10 +868,15 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   /**
    * Put document in database.
    *
-   * @param {Object} doc Document data. Requires `id` and `rev`.
+   * @param {Object} doc Document data. Requires `_id` and `_rev`.
    * @param {String} [options] Options.
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#PUT)
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
+   * @see {@link http://wiki.apache.org/couchdb/HTTP_Document_API#PUT|CouchDB Wiki}
    */
 
   put: function (/* [id], [doc], [query], [headers], [callback] */) {
@@ -850,11 +890,15 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   /**
    * Delete document(s).
    *
-   * @param {String} doc Document or document ID.
+   * @param {Object|Object[]} docs Document or array of documents.
    * @param {Object} [query] HTTP query options.
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#DELETE)
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
+   * @see {@link http://wiki.apache.org/couchdb/HTTP_Document_API#DELETE|CouchDB Wiki}
+   * @see {@link http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API|CouchDB Wiki}
    */
 
   del: function (docs /* [query], [headers], [callback] */) {
@@ -894,8 +938,12 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *   @param {String} [target._rev] Target document revision. Alternate key
    *     for `target.id`.
    * @param {Object} [query] HTTP query options.
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Document_API#COPY)
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
+   * @see {@link http://wiki.apache.org/couchdb/HTTP_Document_API#COPY|CouchDB Wiki}
    */
 
   copy: function (source, target /* [query], [headers], [callback] */) {
@@ -932,8 +980,12 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *     in results.
    *   @param {Boolean} [query.update_seq=false] Include sequence value
    *     of the database corresponding to the view.
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API)
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
+   * @see {@link http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API|CouchDB Wiki}
    */
 
   all: function (/* [query], [headers], [callback] */) {
@@ -973,8 +1025,12 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *     in results.
    *   @param {Boolean} [query.update_seq=false] Include sequence value
    *     of the database corresponding to the view.
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_view_API)
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
+   * @see {@link http://wiki.apache.org/couchdb/HTTP_view_API|CouchDB Wiki}
    */
 
   find: function (view /* [query], [headers], [callback] */) {
@@ -1019,8 +1075,12 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *     which an empty line is sent. Applicable only to feed types
    *     `longpoll` and `continuous`. Overrides `query.timeout` to keep the
    *     feed alive indefinitely.
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/HTTP_database_API#Changes)
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
+   * @see {@link http://wiki.apache.org/couchdb/HTTP_database_API#Changes|CouchDB Wiki}
    */
 
   changes: function (/* [query], [headers], [callback] */) {
@@ -1030,8 +1090,9 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   },
 
   /**
-   * Get database changes.
+   * Follow database changes.
    *
+   * @memberof clerk.DB
    * @see `#changes()`.
    */
 
@@ -1058,7 +1119,8 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   /**
    * Service a changes request.
    *
-   * @api private
+   * @memberof clerk.DB
+   * @private
    */
 
   _changes: function (request) {
@@ -1073,8 +1135,11 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    * @param {Object} [query] HTTP query options.
    * @param {Object|String} [data] Data.
    * @param {Object} [headers] Headers.
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Document_Update_Handlers)
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
+   * @see {@link http://wiki.apache.org/couchdb/Document_Update_Handlers|CouchDB Wiki}
    */
 
   update: function (handler /* [id], [query], [data], [headers], [callback] */) {
@@ -1098,7 +1163,11 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    * @param {Object|String} docOrId Document or document ID.
    * @param {String} attachmentName Attachment name.
    * @param {Object} [query] HTTP query options.
-   * @return {Promise} If no callback is provided, a Promise is returned.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
    */
 
   attachment: function (doc, attachmentName /* [query], [headers], [callback] */) {
@@ -1117,7 +1186,12 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *   here or in `query`.
    * @param {String} attachmentName Attachment name.
    * @param {Object} data Data.
-   * @return {Promise} If no callback is provided, a Promise is returned.
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
    */
 
   attach: function (doc, attachmentName, data /* [query], [headers], [callback] */) {
@@ -1142,7 +1216,12 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *     local name. Defaults to the selected database name if not given.
    *   @param {String} [options.target=this.name] Target database URL or
    *     local name. Defaults to the selected database name if not given.
-   * @return {Promise} If no callback is provided, a Promise is returned.
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
    */
 
   replicate: function (options /* [query], [headers], [callback] */) {
@@ -1154,7 +1233,12 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   /**
    * Ensure recent changes are committed to disk.
    *
-   * @return {Promise} If no callback is provided, a Promise is returned.
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
    */
 
   commit: function (/* [query], [headers], [callback] */) {
@@ -1165,7 +1249,12 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    * Purge deleted documents from database.
    *
    * @param {Object} revs Map of document IDs to revisions to be purged.
-   * @return {Promise} If no callback is provided, a Promise is returned.
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
    */
 
   purge: function (revs /* [query], [headers], [callback] */) {
@@ -1176,8 +1265,13 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    * Compact database or design.
    *
    * @param {String} [design] Design name if compacting design indexes.
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Compaction)
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
+   * @see {@link http://wiki.apache.org/couchdb/Compaction|CouchDB Wiki}
    */
 
   compact: function (/* [design], [query], [headers], [callback] */) {
@@ -1188,8 +1282,13 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   /**
    * Remove unused views.
    *
-   * @return {Promise} If no callback is provided, a Promise is returned.
-   * @see [CouchDB Wiki](http://wiki.apache.org/couchdb/Compaction)
+   * @param {Object} [query] HTTP query options.
+   * @param {Object} [headers] HTTP headers.
+   * @param {handler} [callback] Callback function.
+   * @return {Promise|null} A Promise, if no callback is provided,
+   *   otherwise `null`.
+   * @memberof clerk.DB
+   * @see {@link http://wiki.apache.org/couchdb/Compaction|CouchDB Wiki}
    */
 
   vacuum: function (/* [query], [headers], [callback] */) {
@@ -1201,8 +1300,10 @@ clerk.DB.prototype = extend(new clerk.Base(), {
    *
    * @param {Object} query The HTTP query options.
    * @param {Object} body The body payload.
+   * @param {handler} [callback] Callback function.
    * @return {Object} The body payload.
-   * @api private
+   * @memberof clerk.DB
+   * @private
    */
 
   _viewOptions: function (q, body) {
@@ -1221,6 +1322,17 @@ clerk.DB.prototype = extend(new clerk.Base(), {
   }
 
 });
+
+/**
+ * Handle a clerk response.
+ *
+ * @callback handler
+ *   @param {Error|null} error Error or `null` on success.
+ *   @param {Object} data Response data.
+ *   @param {Integer} status Response status code.
+ *   @param {Object} headers Response headers.
+ *   @param {superagent.Response} res Superagent response object.
+ */
 
 /**
  * Export clerk.
