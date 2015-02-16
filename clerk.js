@@ -464,15 +464,15 @@ Base.prototype._meta = function (doc) {
  * Parse arguments.
  *
  * @param {Array} args The arguments.
- * @param {Integer} start The index from which to start reading arguments.
- * @param {Boolean} withDoc Set to `true` if the doc source is given as a
+ * @param {Integer} [start] The index from which to start reading arguments.
+ * @param {Boolean} [withBody] Set to `true` if the request body is given as a
  *   parameter before HTTP query options.
- * @return {Promise} A Promise, if no callback is provided,
- *   otherwise `null`.
+ * @param {Boolean} [notDoc] The request body is not a document.
+ * @return {Promise} A Promise, if no callback is provided, otherwise `null`.
  * @private
  */
 
-Base.prototype._ = function (args, start, withDoc) {
+Base.prototype._ = function (args, start, withBody, notDoc) {
   var self = this, doc, id, rev;
 
   function request(method, path, options) {
@@ -493,11 +493,12 @@ Base.prototype._ = function (args, start, withDoc) {
 
   request.f = isFunction(args[args.length - 1]) && args.pop();
   request.p = isString(args[0]) && encodeURI(args.shift());
-  request.q = args[withDoc ? 1 : 0] || {};
-  request.h = args[withDoc ? 2 : 1] || {};
+  request.q = args[withBody ? 1 : 0] || {};
+  request.h = args[withBody ? 2 : 1] || {};
 
-  if (withDoc) {
-    if (doc = (request.b = args[0])) {
+  if (withBody) {
+    doc = request.b = args[0];
+    if (!notDoc) {
       if (id = request.p || doc._id || doc.id) request.p = id;
       if (rev = request.q.rev || doc._rev || doc.rev) request.q.rev = rev;
     }
@@ -1110,8 +1111,8 @@ DB.prototype._changes = function (request) {
  *
  * @param {String} handler Update handler. Example: mydesign/myhandler
  * @param {String} [id] Document ID.
+ * @param {any} data Data.
  * @param {Object} [query] HTTP query options.
- * @param {Object|String} [data] Data.
  * @param {Object} [headers] Headers.
  * @param {handler} [callback] Callback function.
  * @return {Promise} A Promise, if no callback is provided,
@@ -1120,7 +1121,7 @@ DB.prototype._changes = function (request) {
  */
 
 DB.prototype.update = function (handler /* [id], [data], [query], [headers], [callback] */) {
-  var request = this._(arguments, 1, 1);
+  var request = this._(arguments, 1, 1, 1);
   var path = handler.split("/", 2);
 
   path = "_design/" + encodeURIComponent(path[0]) +

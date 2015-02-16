@@ -429,6 +429,14 @@ describe("DB", function () {
       });
     });
 
+    it("should not set the path from the request body", function (done) {
+      this.db.update("test/test", {_id: "foo", Hello: "World"}, function (err) {
+        expect(err).to.be.an(Error);
+        expect(err.url).to.not.match(/\bfoo\b/)
+        done();
+      });
+    });
+
   });
 
 
