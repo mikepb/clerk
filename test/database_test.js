@@ -413,8 +413,8 @@ describe("DB", function () {
 
   describe("#update", function () {
 
-    it("should create an update handler", function () {
-      return this.db.put("_design/test", require("./design"));
+    it("should create an update handler", function (done) {
+      this.db.put("_design/test", require("./design"), done);
     });
 
     it("should use an update handler", function (done) {

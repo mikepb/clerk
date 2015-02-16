@@ -1,4 +1,4 @@
-# clerk [![Build Status](https://secure.travis-ci.org/mikepb/clerk.png)](http://travis-ci.org/mikepb/clerk)
+# clerk [![Build Status](https://travis-ci.org/mikepb/clerk.svg)](http://travis-ci.org/mikepb/clerk)
 
 CouchDB library for node and the browser and sister project to [sage][]
 
