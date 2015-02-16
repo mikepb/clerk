@@ -87,9 +87,8 @@ $ npm run karma
 
 The philosophy of *clerk* is to provide a thin wrapper around the CouchDB API,
 making the database easier to use from JavaScript. *clerk* is designed to
-quickly allow you to get started with CouchDB. As you get more comfortable
-with *clerk* and CouchDB, *clerk* gives you full access to CouchDB's
-more advanced features.
+quickly allow you to get started with CouchDB, while still giving you full
+access to CouchDB's more advanced features.
 
 The library API generally follows the RESTful API, so you can use the CouchDB
 docs as well as the *clerk* docs to build your applications. If a feature is

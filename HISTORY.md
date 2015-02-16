@@ -1,3 +1,10 @@
+0.8.0 / 2015-02-15
+==================
+
+  * Update Travis-CI to test against node 0.10-12 and iojs
+  * Change DB#update() to accept data before query
+
+
 0.7.2 / 2015-02-11
 ==================
 

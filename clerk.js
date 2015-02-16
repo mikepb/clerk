@@ -19,12 +19,7 @@ limitations under the License.
 
 */
 
-/** @namespace clerk */
-
-/*
- * Module dependencies.
- */
-
+// Module dependencies.
 var request = require("superagent");
 
 /**
@@ -124,7 +119,7 @@ function clerk (uri) {
  * @type {String}
  */
 
-clerk.version = "0.7.2";
+clerk.version = "0.8.0";
 
 /**
  * Default host.
@@ -204,6 +199,7 @@ clerk._parseURI = function (uri) {
  * Encapsulates HTTP methods, JSON handling, and response coersion.
  *
  * @constructor
+ * @memberof clerk
  */
 
 function Base () {};
@@ -516,6 +512,7 @@ Base.prototype._ = function (args, start, withDoc) {
  * @param {String} uri Fully qualified URI.
  * @param {String} [auth] Authentication header value.
  * @constructor
+ * @memberof clerk
  * @see {@link http://wiki.apache.org/couchdb/Complete_HTTP_API_Reference|CouchDB Wiki}
  */
 
@@ -690,6 +687,7 @@ Client.prototype.replicate = function (options /* [query], [headers], [callback]
  * @param {String} name DB name.
  * @param {String} [auth] Authentication header value.
  * @constructor
+ * @memberof clerk
  * @return This object for chaining.
  */
 
@@ -1304,8 +1302,5 @@ clerk.Base = Base;
 clerk.Client = Client;
 clerk.DB = DB;
 
-/**
- * Export clerk.
- */
-
+// Export clerk.
 module.exports = clerk;
