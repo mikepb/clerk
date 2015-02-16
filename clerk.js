@@ -373,7 +373,7 @@ Base.prototype._do = function (options) {
     var data;
 
     if (!err) {
-      if (!(data = res.body || res.text)) {}
+      if (!(data = res.body)) { data = res.text; }
       else if (data.error) err = self._error(data);
       else data = self._response(data);
     }
@@ -1121,7 +1121,7 @@ DB.prototype._changes = function (request) {
  * @see {@link http://wiki.apache.org/couchdb/Document_Update_Handlers|CouchDB Wiki}
  */
 
-DB.prototype.update = function (handler /* [id], [query], [data], [headers], [callback] */) {
+DB.prototype.update = function (handler /* [id], [data], [query], [headers], [callback] */) {
   var request = this._(arguments, 1, 1);
   var path = handler.split("/", 2);
 
@@ -1130,10 +1130,7 @@ DB.prototype.update = function (handler /* [id], [query], [data], [headers], [ca
 
   if (request.p) path += "/" + request.p;
 
-  return request(request.p ? "PUT" : "POST", path, {
-    q: request.b,
-    b: request.q
-  });
+  return request("POST", path);
 };
 
 /**

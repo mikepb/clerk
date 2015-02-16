@@ -74,7 +74,7 @@ enable_cors = true
 [cors]
 credentials = true
 origins = *
-headers = Accept, Accept-Language, Authorization, Content-Type, Expires, Last-Modified, Pragma, Origin, Content-Length, If-Match, Destination, X-Requested-With, X-Http-Method-Override, Content-Range
+headers = Accept, Accept-Language, Authorization, Content-Length, Content-Range, Content-Type, Destination, Expires, If-Match, Last-Modified, Origin, Pragma, X-Requested-With, X-Http-Method-Override
 ```
 
 Then, you may run Karma:

@@ -17,7 +17,6 @@ describe("DB", function () {
       this.replica = this.client.db(this.dbname + "-replica");
     });
 
-    before(shared.createDB("db"));
     before(shared.createDB("replica"));
     after(shared.destroyDB("replica"));
 
@@ -413,8 +412,23 @@ describe("DB", function () {
   });
 
   describe("#update", function () {
-    xit("should use an update handler", function () {
+
+    it("should create an update handler", function () {
+      return this.db.put("_design/test", require("./design"));
     });
+
+    it("should use an update handler", function (done) {
+      this.db.update("test/test", "myrandomid", {Hello: "World"}, function (err, body) {
+        if (!err) {
+          expect(body).to.have.property("_id", "myrandomid");
+          expect(body).to.have.property("Hello", "World");
+          expect(body).to.have.property("dtcreated");
+          expect(body).to.have.property("dtupdated");
+        }
+        done(err);
+      });
+    });
+
   });
 
 

@@ -171,6 +171,7 @@ describe("Client", function () {
 
     before(shared.createDB("db"));
     before(shared.createDB("replica"));
+    after(shared.destroyDB("db"));
     after(shared.destroyDB("replica"));
 
     it("shoud be ok", function (done) {
