@@ -1,3 +1,10 @@
+0.8.1 / 2015-04-27
+==================
+
+  * Catch emitted errors from superagent
+  * Update dependencies
+
+
 0.8.0 / 2015-02-15
 ==================
 

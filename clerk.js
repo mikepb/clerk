@@ -119,7 +119,7 @@ function clerk (uri) {
  * @type {String}
  */
 
-clerk.version = "0.8.0";
+clerk.version = "0.8.1";
 
 /**
  * Default host.
@@ -339,11 +339,6 @@ Base.prototype._do = function (options) {
   // create request
   var req = request(options.method, options.uri);
 
-  // handle errors
-  req.on("error", function (err) {
-    fn && fn(err);
-  });
-
   // query string
   if (options.query) {
     // ensure query Array values are JSON encoded
@@ -369,8 +364,7 @@ Base.prototype._do = function (options) {
   if (options.body) req.send(options.body);
 
   // send request
-  req.end(function (res) {
-    var err = res.error;
+  req.end(function (err, res) {
     var data;
 
     if (!err) {
@@ -379,8 +373,9 @@ Base.prototype._do = function (options) {
       else data = self._response(data);
     }
 
-    res.data = data;
+    if (err) return fn && fn(err);
 
+    res.data = data;
     fn && fn(err || null, data, res.status, res.header, res);
   });
 
