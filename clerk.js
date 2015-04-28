@@ -334,9 +334,15 @@ Base.prototype._request = function (options) {
 Base.prototype._do = function (options) {
   var self = this;
   var key, value;
+  var fn = options.fn;
 
   // create request
   var req = request(options.method, options.uri);
+
+  // handle errors
+  req.on("error", function (err) {
+    fn && fn(err);
+  });
 
   // query string
   if (options.query) {
@@ -363,7 +369,6 @@ Base.prototype._do = function (options) {
   if (options.body) req.send(options.body);
 
   // send request
-  var fn = options.fn;
   req.end(function (res) {
     var err = res.error;
     var data;
