@@ -119,7 +119,7 @@ function clerk (uri) {
  * @type {String}
  */
 
-clerk.version = "0.8.1";
+clerk.version = "0.8.2";
 
 /**
  * Default host.

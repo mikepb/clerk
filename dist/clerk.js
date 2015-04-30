@@ -166,7 +166,7 @@ function clerk (uri) {
  * @type {String}
  */
 
-clerk.version = "0.8.0";
+clerk.version = "0.8.2";
 
 /**
  * Default host.
@@ -420,10 +420,13 @@ Base.prototype._do = function (options) {
       else data = self._response(data);
     }
 
-    if (err) return fn && fn(err);
+    if (err && fn) {
+      var response = res || {};
+      return fn(err, data, response.status, response.header, res);
+    }
 
     res.data = data;
-    fn && fn(err || null, data, res.status, res.header, res);
+    if (fn) fn(err || null, data, res.status, res.header, res);
   });
 
   return req;
