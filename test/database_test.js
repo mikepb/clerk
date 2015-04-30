@@ -151,6 +151,7 @@ describe("DB", function () {
     before(putDocument);
 
     describe("#get", function () {
+
       it("should return document", function (done) {
         var doc = this.doc;
         this.db.get(doc._id, function (err, body, status, headers, res) {
@@ -162,6 +163,16 @@ describe("DB", function () {
           done(err);
         });
       });
+
+      it("should return not found", function (done) {
+        this.db.get("notfound" + Math.random(), function (err, body, status, headers, res) {
+          expect(err).to.be.an(Error);
+          expect(err.status).to.be(404);
+          expect(status).to.be(404);
+          done();
+        });
+      });
+
     });
 
     describe("#head", function () {
@@ -432,6 +443,7 @@ describe("DB", function () {
     it("should not set the path from the request body", function (done) {
       this.db.update("test/test", {_id: "foo", Hello: "World"}, function (err) {
         expect(err).to.be.an(Error);
+        expect(err.status).to.be(400);
         expect(err.url).to.not.match(/\bfoo\b/)
         done();
       });
