@@ -11,7 +11,7 @@ describe("clerk", function () {
 
   describe("#Promise", function () {
     it("should default to the global Promise implementation", function () {
-      var ThePromise;
+      var ThePromise = false;
       if (typeof Promise !== "undefined") ThePromise = Promise;
       expect(clerk.Promise).to.be(ThePromise);
     });
