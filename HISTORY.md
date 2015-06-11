@@ -1,3 +1,11 @@
+0.8.3 / 2015-06-11
+==================
+
+  * [Added] Assign `clerk.Promise` for custom Promise implementations.
+  * [Fixed] `db.exists()` resolves to false on 404.
+  * Update dependencies.
+
+
 0.8.2 / 2015-04-30
 ==================
 
