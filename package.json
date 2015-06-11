@@ -22,7 +22,6 @@
     "jsdoc": "*",
     "karma": "*",
     "karma-chrome-launcher": "*",
-    "karma-firefox-launcher": "*",
     "karma-mocha": "*",
     "karma-sinon": "*",
     "karma-webpack": "*",

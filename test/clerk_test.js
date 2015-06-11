@@ -9,6 +9,14 @@ var sinon = require("sinon");
 describe("clerk", function () {
   before(shared.clerkFactory);
 
+  describe("#Promise", function () {
+    it("should default to the global Promise implementation", function () {
+      var ThePromise;
+      if (typeof Promise !== "undefined") ThePromise = Promise;
+      expect(clerk.Promise).to.be(ThePromise);
+    });
+  });
+
   it("should delegate to clerk.make()", function () {
     sinon.spy(clerk, "make");
     clerk();
@@ -17,7 +25,6 @@ describe("clerk", function () {
   });
 
   describe("#make", function () {
-
     it("should make client", function () {
       var client = clerk.make();
       expect(client).to.be.a(clerk.Client);
@@ -35,7 +42,5 @@ describe("clerk", function () {
       expect(db).to.be.a(clerk.DB);
       expect(db).to.have.property("uri", "http://127.0.0.1:5984/test");
     });
-
   });
-
 });

@@ -3,7 +3,7 @@
 /*!
 
 clerk - CouchDB client for node and the browser.
-Copyright 2012-2015 Michael Phan-Ba
+Copyright 2012-2016 Michael Phan-Ba
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

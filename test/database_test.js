@@ -39,12 +39,22 @@ describe("DB", function () {
 
     describe("#exists", function () {
       it("should be true", function (done) {
-        this.db.exists(function (err, body, status, headers, res) {
+        this.db.exists(function (err, exists, status, headers, res) {
           if (!err) {
-            expect(body).to.be(true);
+            expect(exists).to.be(true);
             shared.shouldHave2xxStatus(status);
           }
           done(err);
+        });
+      });
+
+      it("should be false", function (done) {
+        var db = this.client.db(this.dbname + "-404-" + Date.now());
+        db.exists(function (err, exists, status, headers, res) {
+          if (err) return done(err);
+          expect(exists).to.be(false);
+          expect(status).to.be(404);
+          done();
         });
       });
     });

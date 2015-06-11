@@ -7,11 +7,12 @@
 exports = module.exports = {
   output: {
     library: "clerk",
-    libraryTarget: "this",
+    libraryTarget: "umd",
     sourcePrefix: ""
   },
   externals: [{
-    "sinon": "sinon"
+    "sinon": "sinon",
+    "es6-promise": "window"
   }],
   devtool: "source-map",
   node: {

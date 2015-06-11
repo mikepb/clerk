@@ -115,6 +115,13 @@ function clerk (uri) {
 };
 
 /**
+ * Promise implementation.
+ * @type {Promise}
+ */
+
+clerk.Promise = typeof Promise !== "undefined" && Promise;
+
+/**
  * Library version.
  * @type {String}
  */
@@ -213,8 +220,7 @@ function Base () {};
  * @param {Object} [body] HTTP body.
  * @param {Object} [headers] HTTP headers.
  * @param {handler} [callback] Callback function.
- * @return {Promise} A Promise, if no callback is provided,
- *   otherwise `null`.
+ * @return {Promise}
  */
 
 Base.prototype.request = function (/* [method], [path], [query], [body], [headers], [callback] */) {
@@ -271,8 +277,8 @@ Base.prototype._request = function (options) {
 
   // create promise if no callback given
   var promise, req;
-  if (!options.fn && typeof Promise != "undefined") {
-    promise = new Promise(function (resolve, reject) {
+  if (!options.fn && clerk.Promise) {
+    promise = new clerk.Promise(function (resolve, reject) {
       options.fn = function (err, data, status, headers, res) {
         if (err) {
           err.body = data;
@@ -281,7 +287,7 @@ Base.prototype._request = function (options) {
           err.res = res;
           reject(err);
         } else {
-          if (Object.defineProperties) {
+          if (isObject(data) && Object.defineProperties) {
             Object.defineProperties(data, {
               _status: { value: status },
               _headers: { value: headers },
@@ -343,7 +349,7 @@ Base.prototype._do = function (options) {
   if (options.query) {
     // ensure query Array values are JSON encoded
     for (key in options.query) {
-      if (typeof(value = options.query[key]) === "object") {
+      if (isObject(value = options.query[key])) {
         options.query[key] = JSON.stringify(value);
       }
     }
@@ -759,6 +765,7 @@ DB.prototype.info = function (/* [query], [headers], callback */) {
 DB.prototype.exists = function (/* [query], [headers], callback */) {
   var request = this._(arguments);
   request._ = function (err, body, status, headers, req) {
+    if (status === 404) err = null;
     return [err, status === 200, status, headers, req];
   };
   return request("HEAD");
