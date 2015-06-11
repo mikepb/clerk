@@ -3,6 +3,7 @@
   "description": "CouchDB library for Node and the browser",
   "version": "0.8.2",
   "author": "Michael Phan-Ba <michael@mikepb.com>",
+  "license": "Apache-2.0",
   "homepage": "https://github.com/mikepb/clerk",
   "repository": {
     "type": "git",
@@ -14,21 +15,22 @@
     "node": ">=0.10.0"
   },
   "dependencies": {
-    "follow": "^0.11.4",
+    "follow": "^0.12.1",
     "superagent": "^1.2.0"
   },
   "devDependencies": {
     "expect.js": "*",
-    "jsdoc": "*",
-    "karma": "*",
-    "karma-chrome-launcher": "*",
-    "karma-mocha": "*",
-    "karma-sinon": "*",
-    "karma-webpack": "*",
-    "mocha": "*",
-    "sinon": "*",
-    "uglify-js": "*",
-    "webpack": "*"
+    "jsdoc": "^3.3.1",
+    "karma": "^0.12.31",
+    "karma-chrome-launcher": "^0.1.12",
+    "karma-mocha": "^0.1.10",
+    "karma-sinon": "^1.0.4",
+    "karma-webpack": "^1.5.1",
+    "mocha": "^2.2.5",
+    "node-libs-browser": "^0.5.2",
+    "sinon": "^1.15.3",
+    "uglify-js": "^2.4.23",
+    "webpack": "^1.9.10"
   },
   "scripts": {
     "test": "mocha --reporter dot",
