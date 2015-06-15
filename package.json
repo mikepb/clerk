@@ -2,9 +2,22 @@
   "name": "clerk",
   "description": "CouchDB library for Node and the browser",
   "version": "0.8.3",
-  "author": "Michael Phan-Ba <michael@mikepb.com>",
-  "license": "Apache-2.0",
+  "author": {
+    "name": "Michael Phan-Ba",
+    "email": "michael@mikepb.com"
+  },
   "homepage": "https://github.com/mikepb/clerk",
+  "keywords": [
+    "cloudant",
+    "couchdb",
+    "data",
+    "database",
+    "db",
+    "json",
+    "nosql",
+    "request"
+  ],
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git://github.com/mikepb/clerk.git"
